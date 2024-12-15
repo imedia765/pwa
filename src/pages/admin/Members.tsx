@@ -55,7 +55,8 @@ export default function Members() {
         totalCount: count || 0
       };
     },
-    keepPreviousData: true
+    placeholderData: (previousData) => previousData,
+    staleTime: 5000, // Consider data fresh for 5 seconds
   });
 
   const handleUpdate = () => {
