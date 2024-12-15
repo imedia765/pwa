@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Edit2, Trash2, UserCheck, Ban, ChevronDown, UserMinus, Printer } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PrintCollectorDetails } from "./PrintCollectorDetails";
 import { MoveCollectorMembersDialog } from "./MoveCollectorMembersDialog";
@@ -149,24 +149,31 @@ export function CollectorActions({ collector, collectors, onEdit, onUpdate }: Co
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => onEdit(collector)} className="gap-2">
+          <DropdownMenuItem onClick={() => onEdit(collector)} className="flex items-center gap-2 cursor-pointer">
             <Edit2 className="h-4 w-4" /> Edit Name
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowMoveDialog(true)} className="gap-2">
+          <DropdownMenuItem onClick={() => setShowMoveDialog(true)} className="flex items-center gap-2 cursor-pointer">
             <UserMinus className="h-4 w-4" /> Move Members
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handlePrintCollector} className="gap-2">
+          <DropdownMenuItem onClick={handlePrintCollector} className="flex items-center gap-2 cursor-pointer">
             <Printer className="h-4 w-4" /> Print Details
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleActivateCollector} className="gap-2">
-            <UserCheck className="h-4 w-4" /> Activate
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDeactivateCollector} className="gap-2">
-            <Ban className="h-4 w-4" /> Deactivate
-          </DropdownMenuItem>
+          {!collector.active && (
+            <DropdownMenuItem onClick={handleActivateCollector} className="flex items-center gap-2 cursor-pointer">
+              <UserCheck className="h-4 w-4" /> Activate
+            </DropdownMenuItem>
+          )}
+          {collector.active && (
+            <DropdownMenuItem onClick={handleDeactivateCollector} className="flex items-center gap-2 cursor-pointer">
+              <Ban className="h-4 w-4" /> Deactivate
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleDeleteCollector} className="gap-2 text-red-600">
+          <DropdownMenuItem 
+            onClick={handleDeleteCollector} 
+            className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
+          >
             <Trash2 className="h-4 w-4" /> Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
