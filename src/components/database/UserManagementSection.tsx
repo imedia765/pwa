@@ -27,7 +27,13 @@ export function UserManagementSection() {
     queryFn: async () => {
       let query = supabase
         .from('profiles')
-        .select('*, auth_user:auth.users!profiles_user_id_fkey(email, last_sign_in_at)')
+        .select(`
+          *,
+          auth_user:user_id(
+            email,
+            last_sign_in_at
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (searchTerm) {
@@ -42,7 +48,7 @@ export function UserManagementSection() {
       }
 
       // Transform the data to match the expected format
-      return (profiles as Profile[]).map(profile => ({
+      return (profiles as unknown as Profile[]).map(profile => ({
         ...profile,
         email: profile.email || profile.auth_user?.email,
         last_sign_in_at: profile.auth_user?.last_sign_in_at
