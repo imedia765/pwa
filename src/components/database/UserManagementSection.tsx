@@ -12,10 +12,6 @@ interface Profile {
   user_id: string | null;
   created_at: string;
   updated_at: string;
-  auth_user?: {
-    email: string | null;
-    last_sign_in_at: string | null;
-  } | null;
 }
 
 export function UserManagementSection() {
@@ -27,13 +23,7 @@ export function UserManagementSection() {
     queryFn: async () => {
       let query = supabase
         .from('profiles')
-        .select(`
-          *,
-          auth_user:user_id(
-            email,
-            last_sign_in_at
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (searchTerm) {
@@ -48,10 +38,9 @@ export function UserManagementSection() {
       }
 
       // Transform the data to match the expected format
-      return (profiles as unknown as Profile[]).map(profile => ({
+      return (profiles as Profile[]).map(profile => ({
         ...profile,
-        email: profile.email || profile.auth_user?.email,
-        last_sign_in_at: profile.auth_user?.last_sign_in_at
+        last_sign_in_at: null // We'll handle this in a future iteration if needed
       }));
     },
   });
