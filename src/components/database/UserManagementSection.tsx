@@ -7,6 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 type UserRole = "member" | "collector" | "admin";
 
+interface AuthUser {
+  id: string;
+  email: string;
+  last_sign_in_at: string;
+  created_at: string;
+}
+
 interface Profile {
   id: string;
   email: string | null;
@@ -19,19 +26,31 @@ export function UserManagementSection() {
   const [updating, setUpdating] = useState<string | null>(null);
 
   const { data: users, refetch } = useQuery({
-    queryKey: ['profiles'],
+    queryKey: ['auth-users'],
     queryFn: async () => {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching profiles:', error);
-        throw error;
+      // First get all auth users
+      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Error fetching auth users:', authError);
+        throw authError;
       }
 
-      return profiles as Profile[];
+      // Then get all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      // Combine the data
+      return authUsers.map(authUser => ({
+        ...authUser,
+        profile: profiles?.find(profile => profile.id === authUser.id)
+      }));
     },
   });
 
@@ -71,14 +90,19 @@ export function UserManagementSection() {
         <div className="space-y-4">
           {users?.map((user) => (
             <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
+              <div className="space-y-1">
                 <p className="font-medium">{user.email}</p>
+                <p className="text-sm text-muted-foreground">
+                  Last login: {user.last_sign_in_at 
+                    ? new Date(user.last_sign_in_at).toLocaleString() 
+                    : 'Never logged in'}
+                </p>
                 <p className="text-sm text-muted-foreground">
                   Created: {new Date(user.created_at).toLocaleDateString()}
                 </p>
               </div>
               <Select
-                value={user.role || 'member'}
+                value={user.profile?.role || 'member'}
                 onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
                 disabled={updating === user.id}
               >
