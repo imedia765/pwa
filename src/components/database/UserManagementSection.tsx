@@ -5,6 +5,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserSearch } from "./UserSearch";
 import { UserList } from "./UserList";
 
+interface Profile {
+  id: string;
+  email: string | null;
+  role: string | null;
+  user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  auth_user?: {
+    email: string | null;
+    last_sign_in_at: string | null;
+  } | null;
+}
+
 export function UserManagementSection() {
   const [searchTerm, setSearchTerm] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
@@ -14,7 +27,7 @@ export function UserManagementSection() {
     queryFn: async () => {
       let query = supabase
         .from('profiles')
-        .select('*, auth_user:user_id(email, last_sign_in_at)')
+        .select('*, auth_user:auth.users!profiles_user_id_fkey(email, last_sign_in_at)')
         .order('created_at', { ascending: false });
 
       if (searchTerm) {
@@ -29,7 +42,7 @@ export function UserManagementSection() {
       }
 
       // Transform the data to match the expected format
-      return profiles.map(profile => ({
+      return (profiles as Profile[]).map(profile => ({
         ...profile,
         email: profile.email || profile.auth_user?.email,
         last_sign_in_at: profile.auth_user?.last_sign_in_at
