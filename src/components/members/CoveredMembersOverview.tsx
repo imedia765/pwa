@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -53,9 +54,9 @@ export const CoveredMembersOverview = ({ members }: CoveredMembersOverviewProps)
                 </TableHeader>
                 <TableBody>
                   {members.map(member => (
-                    <>
+                    <React.Fragment key={member.id}>
                       {member.coveredMembers?.spouses?.map((spouse, index) => (
-                        <TableRow key={`spouse-${member.id}-${index}`}>
+                        <TableRow key={`${member.id}-spouse-${index}`}>
                           <TableCell>{member.full_name}</TableCell>
                           <TableCell>Spouse</TableCell>
                           <TableCell>{spouse.name}</TableCell>
@@ -64,7 +65,7 @@ export const CoveredMembersOverview = ({ members }: CoveredMembersOverviewProps)
                         </TableRow>
                       ))}
                       {member.coveredMembers?.dependants?.map((dependant, index) => (
-                        <TableRow key={`dependant-${member.id}-${index}`}>
+                        <TableRow key={`${member.id}-dependant-${index}`}>
                           <TableCell>{member.full_name}</TableCell>
                           <TableCell>Dependant</TableCell>
                           <TableCell>{dependant.name}</TableCell>
@@ -72,7 +73,7 @@ export const CoveredMembersOverview = ({ members }: CoveredMembersOverviewProps)
                           <TableCell>{dependant.relationship}</TableCell>
                         </TableRow>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
