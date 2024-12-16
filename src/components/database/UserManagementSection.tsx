@@ -41,7 +41,10 @@ export function UserManagementSection() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: newRole })
+        .update({ 
+          role: newRole,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', userId);
 
       if (error) throw error;
