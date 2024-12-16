@@ -37,11 +37,7 @@ export function UserManagementSection() {
         throw error;
       }
 
-      // Transform the data to match the expected format
-      return (profiles as Profile[]).map(profile => ({
-        ...profile,
-        last_sign_in_at: null // We'll handle this in a future iteration if needed
-      }));
+      return profiles as Profile[];
     },
   });
 
