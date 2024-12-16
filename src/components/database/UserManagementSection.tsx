@@ -14,15 +14,7 @@ export function UserManagementSection() {
     queryFn: async () => {
       let query = supabase
         .from('profiles')
-        .select(`
-          *,
-          members!profiles_id_fkey (
-            id,
-            full_name,
-            member_number,
-            email
-          )
-        `)
+        .select('*, auth_user:user_id(email, last_sign_in_at)')
         .order('created_at', { ascending: false });
 
       if (searchTerm) {
@@ -36,7 +28,12 @@ export function UserManagementSection() {
         throw error;
       }
 
-      return profiles;
+      // Transform the data to match the expected format
+      return profiles.map(profile => ({
+        ...profile,
+        email: profile.email || profile.auth_user?.email,
+        last_sign_in_at: profile.auth_user?.last_sign_in_at
+      }));
     },
   });
 
