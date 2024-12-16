@@ -7,18 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 type UserRole = "member" | "collector" | "admin";
 
-interface AuthUser {
-  id: string;
-  email: string;
-  last_sign_in_at: string;
-  created_at: string;
-}
-
 interface Profile {
   id: string;
   email: string | null;
   role: UserRole | null;
   created_at: string;
+  last_sign_in_at?: string;
 }
 
 export function UserManagementSection() {
@@ -26,31 +20,19 @@ export function UserManagementSection() {
   const [updating, setUpdating] = useState<string | null>(null);
 
   const { data: users, refetch } = useQuery({
-    queryKey: ['auth-users'],
+    queryKey: ['profiles'],
     queryFn: async () => {
-      // First get all auth users
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-        throw authError;
-      }
-
-      // Then get all profiles
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        throw error;
       }
 
-      // Combine the data
-      return authUsers.map(authUser => ({
-        ...authUser,
-        profile: profiles?.find(profile => profile.id === authUser.id)
-      }));
+      return profiles as Profile[];
     },
   });
 
@@ -102,7 +84,7 @@ export function UserManagementSection() {
                 </p>
               </div>
               <Select
-                value={user.profile?.role || 'member'}
+                value={user.role || 'member'}
                 onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
                 disabled={updating === user.id}
               >
