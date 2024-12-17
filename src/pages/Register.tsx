@@ -82,6 +82,9 @@ export default function Register() {
           title: "Profile updated",
           description: "Your profile has been updated successfully.",
         });
+        
+        // Redirect to admin page after successful update
+        navigate("/admin");
       } else {
         // Create new member
         const { error: memberError } = await supabase
@@ -113,9 +116,10 @@ export default function Register() {
           title: "Registration successful",
           description: "Your registration has been submitted and is pending approval.",
         });
+        
+        // Redirect to admin page after successful registration
+        navigate("/admin");
       }
-
-      navigate("/login");
     } catch (error) {
       console.error("Registration error:", error);
       toast({
