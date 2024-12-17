@@ -2,13 +2,16 @@ import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UseFormRegister, UseFormSetValue } from "react-hook-form";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { countries } from "@/data/countries";
 import { useLocation } from "react-router-dom";
 
 interface PersonalInfoProps {
   register: UseFormRegister<any>;
   setValue: UseFormSetValue<any>;
+  watch: UseFormWatch<any>;
 }
 
 interface LocationState {
@@ -26,9 +29,10 @@ interface LocationState {
   };
 }
 
-export const PersonalInfoSection = ({ register, setValue }: PersonalInfoProps) => {
+export const PersonalInfoSection = ({ register, setValue, watch }: PersonalInfoProps) => {
   const location = useLocation();
   const state = location.state as LocationState;
+  const gender = watch("gender");
 
   useEffect(() => {
     if (state?.prefilledData) {
@@ -39,7 +43,7 @@ export const PersonalInfoSection = ({ register, setValue }: PersonalInfoProps) =
       setValue("postCode", data.postCode || "");
       setValue("mobile", data.mobile || "");
       setValue("dob", data.dob || "");
-      setValue("gender", data.gender || "");
+      setValue("gender", data.gender || "male");
       setValue("maritalStatus", data.maritalStatus || "");
       setValue("email", data.email || "");
     }
@@ -150,17 +154,18 @@ export const PersonalInfoSection = ({ register, setValue }: PersonalInfoProps) =
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <label htmlFor="gender">Gender</label>
-          <Select onValueChange={(value) => setValue("gender", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select Gender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="space-y-4">
+          <Label htmlFor="gender">Gender</Label>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="gender"
+              checked={gender === "male"}
+              onCheckedChange={(checked) => setValue("gender", checked ? "male" : "female")}
+            />
+            <Label htmlFor="gender" className="text-sm">
+              {gender === "male" ? "Male" : "Female"}
+            </Label>
+          </div>
         </div>
       </div>
     </div>

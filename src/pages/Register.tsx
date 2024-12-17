@@ -18,7 +18,7 @@ export default function Register() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { register, handleSubmit, setValue } = useForm();
+  const { register, handleSubmit, setValue, watch } = useForm();
   const [selectedCollectorId, setSelectedCollectorId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,10 +71,12 @@ export default function Register() {
             email_verified: false
           })
           .eq('member_number', state.memberId)
-          .select()
-          .single();
+          .select();
 
-        if (memberError) throw memberError;
+        if (memberError) {
+          console.error("Registration error:", memberError);
+          throw memberError;
+        }
 
         toast({
           title: "Profile updated",
@@ -102,7 +104,10 @@ export default function Register() {
           .select()
           .single();
 
-        if (memberError) throw memberError;
+        if (memberError) {
+          console.error("Registration error:", memberError);
+          throw memberError;
+        }
 
         toast({
           title: "Registration successful",
@@ -143,7 +148,7 @@ export default function Register() {
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-8 divide-y divide-gray-200">
-              <PersonalInfoSection register={register} setValue={setValue} />
+              <PersonalInfoSection register={register} setValue={setValue} watch={watch} />
               <NextOfKinSection />
               <SpousesSection />
               <DependantsSection />
