@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { useState } from "react";
 import { RegistrationStateHandler } from "@/components/registration/RegistrationStateHandler";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   createAuthUser, 
   createOrUpdateMember, 
