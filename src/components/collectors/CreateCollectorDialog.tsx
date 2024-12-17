@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,19 +7,63 @@ import { UserPlus, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function CreateCollectorDialog({ onUpdate }: { onUpdate: () => void }) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Auth check error:', error);
+          setIsAuthenticated(false);
+          return;
+        }
+        setIsAuthenticated(!!session);
+        if (!session) {
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, !!session);
+      setIsAuthenticated(!!session);
+      if (!session) {
+        navigate('/login');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const { data: members, isLoading } = useQuery({
-    queryKey: ['all-members'],
+    queryKey: ['unassigned-members'],
     queryFn: async () => {
-      console.log('Fetching all members...');
+      if (!isAuthenticated) {
+        console.log('Not authenticated, skipping fetch');
+        return [];
+      }
+
+      console.log('Fetching unassigned members...');
       const { data, error } = await supabase
         .from('members')
         .select('*')
+        .is('collector', null)
         .order('full_name');
       
       if (error) {
@@ -29,16 +73,26 @@ export function CreateCollectorDialog({ onUpdate }: { onUpdate: () => void }) {
       
       console.log('Fetched members:', data);
       return data;
-    }
+    },
+    enabled: isAuthenticated, // Only run query when authenticated
   });
 
   const filteredMembers = members?.filter(member =>
     member.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.member_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (member.collector && member.collector.toLowerCase().includes(searchTerm.toLowerCase()))
+    member.member_number.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleCreateCollector = async (member: any) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create collectors",
+        variant: "destructive"
+      });
+      navigate('/login');
+      return;
+    }
+
     try {
       // Generate prefix from member name (first letters of each word)
       const prefix = member.full_name
@@ -73,7 +127,10 @@ export function CreateCollectorDialog({ onUpdate }: { onUpdate: () => void }) {
       // Update the member's collector field
       const { error: updateError } = await supabase
         .from('members')
-        .update({ collector: member.full_name })
+        .update({ 
+          collector: member.full_name,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', member.id);
 
       if (updateError) throw updateError;
@@ -94,6 +151,10 @@ export function CreateCollectorDialog({ onUpdate }: { onUpdate: () => void }) {
       });
     }
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -125,7 +186,7 @@ export function CreateCollectorDialog({ onUpdate }: { onUpdate: () => void }) {
                 </div>
               ) : filteredMembers.length === 0 ? (
                 <div className="text-center text-muted-foreground py-4">
-                  No members found
+                  No unassigned members found
                 </div>
               ) : (
                 filteredMembers.map((member) => (
@@ -138,11 +199,6 @@ export function CreateCollectorDialog({ onUpdate }: { onUpdate: () => void }) {
                       <p className="font-medium">{member.full_name}</p>
                       <p className="text-sm text-muted-foreground">
                         {member.member_number}
-                        {member.collector && (
-                          <span className="ml-2 text-yellow-500">
-                            Current Collector: {member.collector}
-                          </span>
-                        )}
                       </p>
                     </div>
                     <Button variant="ghost" size="sm">

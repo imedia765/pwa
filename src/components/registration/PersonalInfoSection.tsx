@@ -1,13 +1,50 @@
+import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UseFormRegister } from "react-hook-form";
+import { UseFormRegister, UseFormSetValue } from "react-hook-form";
+import { countries } from "@/data/countries";
+import { useLocation } from "react-router-dom";
 
 interface PersonalInfoProps {
   register: UseFormRegister<any>;
+  setValue: UseFormSetValue<any>;
 }
 
-export const PersonalInfoSection = ({ register }: PersonalInfoProps) => {
+interface LocationState {
+  memberId?: string;
+  prefilledData?: {
+    fullName: string;
+    address: string;
+    town: string;
+    postCode: string;
+    mobile: string;
+    dob: string;
+    gender: string;
+    maritalStatus: string;
+    email: string;
+  };
+}
+
+export const PersonalInfoSection = ({ register, setValue }: PersonalInfoProps) => {
+  const location = useLocation();
+  const state = location.state as LocationState;
+
+  useEffect(() => {
+    if (state?.prefilledData) {
+      const data = state.prefilledData;
+      setValue("fullName", data.fullName);
+      setValue("address", data.address || "");
+      setValue("town", data.town || "");
+      setValue("postCode", data.postCode || "");
+      setValue("mobile", data.mobile || "");
+      setValue("dob", data.dob || "");
+      setValue("gender", data.gender || "");
+      setValue("maritalStatus", data.maritalStatus || "");
+      setValue("email", data.email || "");
+    }
+  }, [state, setValue]);
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -86,14 +123,22 @@ export const PersonalInfoSection = ({ register }: PersonalInfoProps) => {
         </div>
         <div className="space-y-2">
           <label htmlFor="pob">Place of Birth</label>
-          <Input
-            id="pob"
-            {...register("pob", { required: true })}
-          />
+          <Select onValueChange={(value) => setValue("pob", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Country of Birth" />
+            </SelectTrigger>
+            <SelectContent>
+              {countries.map((country) => (
+                <SelectItem key={country.value} value={country.value}>
+                  {country.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <label htmlFor="maritalStatus">Marital Status</label>
-          <Select onValueChange={(value) => register("maritalStatus").onChange({ target: { value } })}>
+          <Select onValueChange={(value) => setValue("maritalStatus", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select Marital Status" />
             </SelectTrigger>
@@ -107,7 +152,7 @@ export const PersonalInfoSection = ({ register }: PersonalInfoProps) => {
         </div>
         <div className="space-y-2">
           <label htmlFor="gender">Gender</label>
-          <Select onValueChange={(value) => register("gender").onChange({ target: { value } })}>
+          <Select onValueChange={(value) => setValue("gender", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select Gender" />
             </SelectTrigger>

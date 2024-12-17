@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
 
 interface EmailLoginFormProps {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
-  isLoading: boolean;
+  isLoading?: boolean;
 }
 
 export const EmailLoginForm = ({ onSubmit, isLoading }: EmailLoginFormProps) => {
@@ -31,14 +30,7 @@ export const EmailLoginForm = ({ onSubmit, isLoading }: EmailLoginFormProps) => 
         />
       </div>
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Logging in...
-          </>
-        ) : (
-          "Login with Email"
-        )}
+        {isLoading ? "Logging in..." : "Login with Email"}
       </Button>
     </form>
   );

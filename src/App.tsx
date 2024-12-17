@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ChangePassword from "./pages/ChangePassword";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import CollectorResponsibilities from "./pages/CollectorResponsibilities";
 import MedicalExaminerProcess from "./pages/MedicalExaminerProcess";
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/change-password" element={<ChangePassword />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/collector-responsibilities" element={<CollectorResponsibilities />} />
                 <Route path="/medical-examiner-process" element={<MedicalExaminerProcess />} />

@@ -16,6 +16,7 @@ interface Profile {
 
 export function UserManagementSection() {
   const [searchTerm, setSearchTerm] = useState("");
+
   const [updating, setUpdating] = useState<string | null>(null);
 
   const { data: users, refetch } = useQuery({
@@ -27,7 +28,13 @@ export function UserManagementSection() {
         .order('created_at', { ascending: false });
 
       if (searchTerm) {
-        query = query.or(`email.ilike.%${searchTerm}%,role.eq.${searchTerm}`);
+        // Only search email with ilike, and only match role if it exactly matches one of the valid roles
+        if (['member', 'collector', 'admin'].includes(searchTerm.toLowerCase())) {
+          query = query.or(`email.ilike.%${searchTerm}%,role.eq.${searchTerm.toLowerCase()}`);
+        } else {
+          // If search term isn't a valid role, only search in email
+          query = query.ilike('email', `%${searchTerm}%`);
+        }
       }
 
       const { data: profiles, error } = await query;

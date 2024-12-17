@@ -2,14 +2,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveAs } from 'file-saver';
 
 const TABLES = [
-  'members',
-  'collectors',
+  'ticket_responses',
+  'support_tickets',
+  'registrations',
   'payments',
   'family_members',
-  'registrations',
-  'support_tickets',
-  'ticket_responses',
-  'admin_notes'
+  'admin_notes',
+  'members',
+  'collectors',
+  'profiles'
 ] as const;
 
 type TableName = typeof TABLES[number];
@@ -64,6 +65,20 @@ export async function exportDatabase() {
   }
 }
 
+async function getNextCollectorNumber(): Promise<string> {
+  const { data: collectors } = await supabase
+    .from('collectors')
+    .select('number')
+    .order('number', { ascending: false })
+    .limit(1);
+
+  const nextNumber = collectors && collectors.length > 0
+    ? String(Number(collectors[0].number) + 1).padStart(2, '0')
+    : '01';
+    
+  return nextNumber;
+}
+
 export async function restoreDatabase(backupFile: File) {
   try {
     const fileContent = await backupFile.text();
@@ -84,29 +99,93 @@ export async function restoreDatabase(backupFile: File) {
       adminNotes: 'admin_notes'
     };
 
-    for (const [key, table] of Object.entries(tableMap)) {
-      const data = backupData[key];
+    // Process collectors first
+    if (backupData.collectors && Array.isArray(backupData.collectors)) {
+      const { error: deleteCollectorsError } = await supabase
+        .from('collectors')
+        .delete()
+        .filter('id', 'not.is', null);
+
+      if (deleteCollectorsError) throw deleteCollectorsError;
+
+      // Process collectors in batches
+      const batchSize = 50;
+      let currentNumber = 1;
       
-      if (Array.isArray(data)) {
-        const { error: deleteError } = await supabase
-          .from(table)
-          .delete()
-          .neq('id', 'placeholder');
+      for (let i = 0; i < backupData.collectors.length; i += batchSize) {
+        const batch = backupData.collectors
+          .slice(i, Math.min(i + batchSize, backupData.collectors.length))
+          .map(({ id, ...collector }) => {
+            // Generate new prefix from name
+            const prefix = collector.name
+              .split(/\s+/)
+              .map(word => word.charAt(0).toUpperCase())
+              .join('');
+            
+            // Assign new sequential number
+            const number = String(currentNumber++).padStart(2, '0');
+            
+            return {
+              ...collector,
+              prefix,
+              number,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+          });
 
-        if (deleteError) {
-          console.error(`Error clearing ${table}:`, deleteError);
-          throw deleteError;
-        }
+        const { error } = await supabase
+          .from('collectors')
+          .insert(batch);
 
-        if (data.length > 0) {
+        if (error) throw error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    // Process other tables
+    for (const [key, table] of Object.entries(tableMap)) {
+      if (key === 'collectors') continue;
+      
+      const data = backupData[key];
+      if (!Array.isArray(data)) continue;
+
+      console.log(`Processing ${table}...`);
+
+      const { error: deleteError } = await supabase
+        .from(table)
+        .delete()
+        .filter('id', 'not.is', null);
+
+      if (deleteError) {
+        console.error(`Error clearing ${table}:`, deleteError);
+        throw deleteError;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (data.length > 0) {
+        const batchSize = 50;
+        for (let i = 0; i < data.length; i += batchSize) {
+          const batch = data.slice(i, Math.min(i + batchSize, data.length));
+          
+          const processedBatch = batch.map(({ id, member_number, ...rest }) => ({
+            ...rest,
+            ...(table !== 'members' && { member_number }),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }));
+
           const { error: insertError } = await supabase
             .from(table)
-            .insert(data);
+            .insert(processedBatch);
 
           if (insertError) {
             console.error(`Error restoring ${table}:`, insertError);
             throw insertError;
           }
+
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
     }
@@ -135,7 +214,6 @@ export async function getDatabaseStatus() {
       details: logs[0].details
     } : null;
 
-    // Get total size of database (approximate based on row counts)
     const tableSizes = await Promise.all(
       TABLES.map(async (table) => {
         const { count, error } = await supabase
@@ -148,8 +226,7 @@ export async function getDatabaseStatus() {
     );
 
     const totalRows = tableSizes.reduce((acc, curr) => acc + curr, 0);
-    // Rough estimate of size based on row count (just for display purposes)
-    const estimatedSize = Math.round(totalRows * 0.5); // Assuming average 0.5KB per row
+    const estimatedSize = Math.round(totalRows * 0.5);
 
     return {
       lastAction,

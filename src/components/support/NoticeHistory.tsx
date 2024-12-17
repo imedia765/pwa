@@ -33,6 +33,7 @@ export function NoticeHistory() {
         .select(`
           id,
           subject,
+          description,
           created_at,
           member_id,
           ticket_responses (
@@ -104,6 +105,9 @@ export function NoticeHistory() {
                       ) : (
                         <DropdownMenuItem>Sent to all members</DropdownMenuItem>
                       )}
+                      <DropdownMenuItem className="whitespace-pre-wrap">
+                        {notice.description}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
