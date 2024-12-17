@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Icons } from "@/components/ui/icons";
 import { supabase } from "@/integrations/supabase/client";
-import { EmailLoginForm } from "@/components/auth/EmailLoginForm";
-import { MemberIdLoginForm } from "@/components/auth/MemberIdLoginForm";
+import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     console.log("Login component mounted - checking session");
@@ -32,8 +28,6 @@ export default function Login() {
       if (event === "SIGNED_IN" && session) {
         console.log("Sign in event detected, redirecting to admin");
         navigate("/admin");
-      } else if (event === "SIGNED_OUT") {
-        setIsLoggedIn(false);
       }
     });
 
@@ -45,12 +39,14 @@ export default function Login() {
 
   const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     console.log("Email login attempt started");
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
+    
     try {
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
+
       console.log("Attempting email login for:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -65,7 +61,6 @@ export default function Login() {
         title: "Login successful",
         description: "Welcome back!",
       });
-      setIsLoggedIn(true);
     } catch (error) {
       console.error("Email login error:", error);
       toast({
@@ -73,21 +68,25 @@ export default function Login() {
         description: error instanceof Error ? error.message : "An error occurred during login",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleMemberIdSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     console.log("Member ID login attempt started");
-    const formData = new FormData(e.currentTarget);
-    const memberId = formData.get("memberId") as string;
-    const password = formData.get("memberPassword") as string;
-
+    
     try {
+      const formData = new FormData(e.currentTarget);
+      const memberId = formData.get("memberId") as string;
+      const password = formData.get("memberPassword") as string;
+
       console.log("Looking up member with ID:", memberId);
       const { data: memberData, error: memberError } = await supabase
         .from('members')
-        .select('email')
+        .select('email, default_password_hash')
         .eq('member_number', memberId)
         .single();
 
@@ -95,6 +94,11 @@ export default function Login() {
 
       if (memberError || !memberData?.email) {
         throw new Error("Member ID not found");
+      }
+
+      // For members using their default password (member number)
+      if (!memberData.default_password_hash) {
+        throw new Error("Please contact support to reset your password");
       }
 
       console.log("Attempting login with member's email");
@@ -105,7 +109,12 @@ export default function Login() {
 
       console.log("Member ID login response:", { data, error });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          throw new Error("Invalid Member ID or password");
+        }
+        throw error;
+      }
 
       toast({
         title: "Login successful",
@@ -118,10 +127,13 @@ export default function Login() {
         description: error instanceof Error ? error.message : "Invalid member ID or password",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
+    setIsLoading(true);
     console.log("Google login attempt started");
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -146,6 +158,7 @@ export default function Login() {
         description: error instanceof Error ? error.message : "An error occurred during Google login",
         variant: "destructive",
       });
+      setIsLoading(false);
     }
   };
 
@@ -156,55 +169,12 @@ export default function Login() {
           <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoggedIn ? (
-            <Button onClick={() => supabase.auth.signOut()} className="w-full">
-              Logout
-            </Button>
-          ) : (
-            <>
-              <Button 
-                variant="outline" 
-                className="w-full mb-6 h-12 text-lg bg-white hover:bg-gray-50 border-2 shadow-sm text-gray-700 font-medium" 
-                onClick={handleGoogleLogin}
-              >
-                <Icons.google className="mr-2 h-5 w-5 [&>path]:fill-[#4285F4]" />
-                Continue with Google
-              </Button>
-              
-              <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <Tabs defaultValue="email" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="email">Email</TabsTrigger>
-                  <TabsTrigger value="memberId">Member ID</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="email">
-                  <EmailLoginForm onSubmit={handleEmailSubmit} />
-                </TabsContent>
-
-                <TabsContent value="memberId">
-                  <MemberIdLoginForm onSubmit={handleMemberIdSubmit} />
-                </TabsContent>
-              </Tabs>
-
-              <div className="text-center text-sm mt-6">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-primary hover:underline">
-                  Register here
-                </Link>
-              </div>
-            </>
-          )}
+          <LoginForm
+            isLoading={isLoading}
+            onEmailSubmit={handleEmailSubmit}
+            onMemberIdSubmit={handleMemberIdSubmit}
+            onGoogleLogin={handleGoogleLogin}
+          />
         </CardContent>
       </Card>
     </div>
