@@ -15,7 +15,7 @@ import { RegistrationStateHandler } from "@/components/registration/Registration
 import { supabase } from "@/integrations/supabase/client";
 import { 
   createAuthUser, 
-  createOrUpdateMember, 
+  createOrUpdateMember,
   createOrUpdateProfile, 
   createOrUpdateRegistration 
 } from "@/services/registrationService";
