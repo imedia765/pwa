@@ -40,6 +40,7 @@ export default function Register() {
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
+      console.log("Starting registration process with data:", { ...data, collectorId: selectedCollectorId });
 
       if (!selectedCollectorId) {
         toast({
@@ -50,7 +51,11 @@ export default function Register() {
         return;
       }
 
-      console.log("Starting registration process with data:", { ...data, collectorId: selectedCollectorId });
+      // Get current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
 
       if (state?.memberId) {
         // Update existing member
@@ -74,8 +79,37 @@ export default function Register() {
           .select();
 
         if (memberError) {
-          console.error("Registration error:", memberError);
+          console.error("Member update error:", memberError);
           throw memberError;
+        }
+
+        // Update or create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: data.email,
+            role: 'member',
+            updated_at: new Date().toISOString()
+          });
+
+        if (profileError) {
+          console.error("Profile update error:", profileError);
+          throw profileError;
+        }
+
+        // Update registration status
+        const { error: registrationError } = await supabase
+          .from('registrations')
+          .upsert({
+            member_id: state.memberId,
+            status: 'completed',
+            updated_at: new Date().toISOString()
+          });
+
+        if (registrationError) {
+          console.error("Registration update error:", registrationError);
+          throw registrationError;
         }
 
         toast({
@@ -87,7 +121,7 @@ export default function Register() {
         navigate("/admin");
       } else {
         // Create new member
-        const { error: memberError } = await supabase
+        const { data: newMember, error: memberError } = await supabase
           .from('members')
           .insert({
             collector_id: selectedCollectorId,
@@ -108,8 +142,39 @@ export default function Register() {
           .single();
 
         if (memberError) {
-          console.error("Registration error:", memberError);
+          console.error("Member creation error:", memberError);
           throw memberError;
+        }
+
+        // Create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: data.email,
+            role: 'member',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          throw profileError;
+        }
+
+        // Create registration record
+        const { error: registrationError } = await supabase
+          .from('registrations')
+          .insert({
+            member_id: newMember.id,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (registrationError) {
+          console.error("Registration creation error:", registrationError);
+          throw registrationError;
         }
 
         toast({
