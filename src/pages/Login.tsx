@@ -65,7 +65,7 @@ export default function Login() {
       console.error("Email login error:", error);
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred during login",
+        description: "Invalid email or password",
         variant: "destructive",
       });
     } finally {
@@ -87,7 +87,7 @@ export default function Login() {
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('email, default_password_hash')
-        .eq('member_number', memberId)
+        .eq('member_number', memberId.toUpperCase())
         .single();
 
       console.log("Member lookup result:", { memberData, memberError });
@@ -96,9 +96,21 @@ export default function Login() {
         throw new Error("Member ID not found");
       }
 
-      // For members using their default password (member number)
       if (!memberData.default_password_hash) {
         throw new Error("Please contact support to reset your password");
+      }
+
+      // Verify the password matches the default password hash
+      const hashedPassword = await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(password)
+      );
+      const hashedPasswordHex = Array.from(new Uint8Array(hashedPassword))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      if (hashedPasswordHex !== memberData.default_password_hash) {
+        throw new Error("Invalid password");
       }
 
       console.log("Attempting login with member's email");
