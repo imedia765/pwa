@@ -40,6 +40,7 @@ export const createOrUpdateMember = async (
     email_verified: false
   };
 
+  let member;
   if (memberId) {
     const { data: updatedMember, error } = await supabase
       .from('members')
@@ -49,7 +50,7 @@ export const createOrUpdateMember = async (
       .single();
 
     if (error) throw error;
-    return updatedMember;
+    member = updatedMember;
   } else {
     const { data: newMember, error } = await supabase
       .from('members')
@@ -62,8 +63,52 @@ export const createOrUpdateMember = async (
       .single();
 
     if (error) throw error;
-    return newMember;
+    member = newMember;
   }
+
+  // Save spouses and dependants as family members
+  if (data.spouses?.length > 0) {
+    const spousesData = data.spouses.map((spouse: any) => ({
+      member_id: member.id,
+      name: spouse.name,
+      date_of_birth: spouse.dateOfBirth,
+      relationship: 'spouse',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }));
+
+    const { error: spousesError } = await supabase
+      .from('family_members')
+      .insert(spousesData);
+
+    if (spousesError) {
+      console.error("Error saving spouses:", spousesError);
+      throw spousesError;
+    }
+  }
+
+  if (data.dependants?.length > 0) {
+    const dependantsData = data.dependants.map((dependant: any) => ({
+      member_id: member.id,
+      name: dependant.name,
+      date_of_birth: dependant.dateOfBirth,
+      gender: dependant.gender,
+      relationship: dependant.category,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }));
+
+    const { error: dependantsError } = await supabase
+      .from('family_members')
+      .insert(dependantsData);
+
+    if (dependantsError) {
+      console.error("Error saving dependants:", dependantsError);
+      throw dependantsError;
+    }
+  }
+
+  return member;
 };
 
 export const createOrUpdateProfile = async (userId: string, email: string) => {

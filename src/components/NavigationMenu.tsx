@@ -1,15 +1,17 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ThemeToggle";
-import { Menu } from "lucide-react";
+import { Menu, User, Users, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useState, useEffect } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
+import { Badge } from "./ui/badge";
 
 export function NavigationMenu() {
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -22,6 +24,19 @@ export function NavigationMenu() {
           return;
         }
         setIsLoggedIn(!!session);
+        
+        if (session) {
+          // Fetch user role from profiles table
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single();
+            
+          if (!profileError && profileData) {
+            setUserRole(profileData.role);
+          }
+        }
       } catch (error) {
         console.error("Session check failed:", error);
       }
@@ -34,16 +49,24 @@ export function NavigationMenu() {
       
       if (event === "SIGNED_IN" && session) {
         setIsLoggedIn(true);
+        // Fetch user role when signed in
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+          
+        if (profileData) {
+          setUserRole(profileData.role);
+        }
+        
         toast({
           title: "Signed in successfully",
           description: "Welcome back!",
         });
       } else if (event === "SIGNED_OUT") {
         setIsLoggedIn(false);
-      } else if (event === "TOKEN_REFRESHED") {
-        console.log("Token refreshed successfully");
-      } else if (event === "USER_UPDATED") {
-        console.log("User data updated");
+        setUserRole(null);
       }
     });
 
@@ -71,6 +94,7 @@ export function NavigationMenu() {
       }
       
       setIsLoggedIn(false);
+      setUserRole(null);
       toast({
         title: "Logged out successfully",
         description: "Come back soon!",
@@ -86,14 +110,37 @@ export function NavigationMenu() {
     }
   };
 
+  const getRoleBadge = () => {
+    if (!isLoggedIn || !userRole) return null;
+
+    const roleConfig = {
+      admin: { icon: Shield, color: "bg-red-500 hover:bg-red-600" },
+      collector: { icon: Users, color: "bg-blue-500 hover:bg-blue-600" },
+      member: { icon: User, color: "bg-green-500 hover:bg-green-600" }
+    }[userRole];
+
+    if (!roleConfig) return null;
+
+    const Icon = roleConfig.icon;
+    return (
+      <Badge className={`${roleConfig.color} ml-2 gap-1`}>
+        <Icon className="h-3 w-3" />
+        {userRole}
+      </Badge>
+    );
+  };
+
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container flex h-14 items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            PWA Burton
-          </span>
-        </Link>
+        <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              PWA Burton
+            </span>
+          </Link>
+          {getRoleBadge()}
+        </div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-2">
