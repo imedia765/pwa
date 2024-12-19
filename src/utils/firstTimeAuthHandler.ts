@@ -26,15 +26,17 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
   }
 
   try {
-    // Create auth user with member ID as temporary identifier using a valid domain
-    const tempEmail = `${memberId.toLowerCase()}.temp@pwaburton.org`;
+    // Create auth user with temporary email
+    const tempEmail = `${memberId.toLowerCase()}@pwaburton.org`;
     console.log("Creating auth user with temporary email:", tempEmail);
     
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: tempEmail,
       password: password,
       options: {
-        emailRedirectTo: `${window.location.origin}/change-password`
+        data: {
+          member_id: member.id
+        }
       }
     });
 
@@ -52,7 +54,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         first_time_login: true,
         profile_updated: false,
         password_changed: false,
-        email: tempEmail // Store the temporary email
+        email: tempEmail
       })
       .eq('id', member.id);
 
