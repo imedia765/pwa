@@ -26,26 +26,21 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
   }
 
   try {
-    // Create auth user with temporary email
+    // Sign in with member ID as email
     const tempEmail = `${memberId.toLowerCase()}@pwaburton.org`;
-    console.log("Creating auth user with temporary email:", tempEmail);
+    console.log("Attempting sign in with:", tempEmail);
     
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: tempEmail,
       password: password,
-      options: {
-        data: {
-          member_id: member.id
-        }
-      }
     });
 
-    if (signUpError) {
-      console.error("Signup error:", signUpError);
-      throw signUpError;
+    if (signInError) {
+      console.error("Sign in error:", signInError);
+      throw signInError;
     }
 
-    console.log("Auth user created successfully:", signUpData);
+    console.log("Sign in successful:", signInData);
 
     // Update member to mark as pending email update
     const { error: updateError } = await supabase
