@@ -26,35 +26,24 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
   }
 
   try {
-    // Check if auth user exists
+    // Create auth user with temporary email
     const tempEmail = `${memberId.toLowerCase()}@pwaburton.org`;
-    console.log("Checking for existing auth user with email:", tempEmail);
+    console.log("Attempting to create/sign in user with:", tempEmail);
     
-    const { data: { user }, error: getUserError } = await supabase.auth.admin.getUserByEmail(tempEmail);
-    
-    if (getUserError) {
-      console.error("Error checking for existing user:", getUserError);
-    }
-
-    if (!user) {
-      // Create auth user if they don't exist
-      console.log("Creating new auth user with email:", tempEmail);
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: tempEmail,
-        password: password,
-        options: {
-          data: {
-            member_id: member.id
-          }
+    // Attempt to sign up (this will either create a new user or fail if the user exists)
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: tempEmail,
+      password: password,
+      options: {
+        data: {
+          member_id: member.id
         }
-      });
-
-      if (signUpError) {
-        console.error("Sign up error:", signUpError);
-        throw signUpError;
       }
+    });
 
-      console.log("Auth user created successfully:", signUpData);
+    if (signUpError && signUpError.message !== "User already registered") {
+      console.error("Sign up error:", signUpError);
+      throw signUpError;
     }
 
     // Now attempt to sign in
