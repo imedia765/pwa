@@ -33,7 +33,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     // Try to sign in first in case the user already exists
     try {
-      console.log("Attempting sign in with:", { email: tempEmail, password: upperPassword });
+      console.log("Attempting sign in with:", { email: tempEmail });
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: tempEmail,
         password: upperPassword,
@@ -45,14 +45,32 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         return { success: true };
       }
 
+      // Handle specific error cases
       if (signInError?.message === "Email not confirmed") {
-        console.log("Email not confirmed, attempting to resend confirmation");
-        const { error: resendError } = await supabase.auth.resend({
-          type: 'signup',
-          email: tempEmail,
+        console.log("Email not confirmed, attempting to confirm");
+        const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
+          body: { email: tempEmail }
         });
-        if (resendError) {
-          console.error("Error resending confirmation:", resendError);
+        
+        if (confirmError) {
+          console.error("Error confirming email:", confirmError);
+          throw new Error("Failed to confirm email automatically. Please contact support.");
+        }
+
+        // Try signing in again after confirming email
+        const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+          email: tempEmail,
+          password: upperPassword,
+        });
+
+        if (retryError) {
+          console.error("Error signing in after confirmation:", retryError);
+          throw retryError;
+        }
+
+        if (retryData.user) {
+          await updateMemberStatus(member.id, tempEmail);
+          return { success: true };
         }
       }
 
@@ -62,7 +80,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     }
 
     // If sign in failed, try to create the user
-    console.log("Creating new user with:", { email: tempEmail, password: upperPassword });
+    console.log("Creating new user with:", { email: tempEmail });
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: tempEmail,
       password: upperPassword,
@@ -70,8 +88,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         data: {
           member_id: member.id,
           member_number: memberId.toUpperCase(),
-        },
-        emailRedirectTo: window.location.origin + '/login'
+        }
       }
     });
 
@@ -82,23 +99,21 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     console.log("User created successfully:", signUpData);
 
-    // For development, we'll automatically confirm the email
-    if (signUpData.user && !signUpData.user.email_confirmed_at) {
-      console.log("Email not confirmed, attempting admin confirmation");
-      const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
-        body: { email: tempEmail }
-      });
-      
-      if (confirmError) {
-        console.error("Error confirming email:", confirmError);
-        throw new Error("Failed to confirm email automatically. Please check your email for confirmation link.");
-      }
+    // Attempt to confirm email automatically
+    console.log("Attempting to confirm email automatically");
+    const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
+      body: { email: tempEmail }
+    });
+
+    if (confirmError) {
+      console.error("Error confirming email:", confirmError);
+      throw new Error("Failed to confirm email automatically. Please contact support.");
     }
 
-    // Wait a moment before attempting to sign in
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait a moment before attempting final sign in
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Try signing in after creating the user
+    // Final sign in attempt
     console.log("Attempting final sign in");
     const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
       email: tempEmail,

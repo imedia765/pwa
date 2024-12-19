@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -18,25 +19,39 @@ serve(async (req) => {
     )
 
     const { email } = await req.json()
+    console.log('Attempting to confirm email for:', email)
 
     if (!email) {
       throw new Error('Email is required')
     }
 
-    const { data: user, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email)
+    // First get the user
+    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+      filter: {
+        email: email
+      }
+    })
     
-    if (getUserError || !user) {
+    if (getUserError || !users || users.length === 0) {
+      console.error('Error finding user:', getUserError)
       throw new Error('User not found')
     }
 
+    const user = users[0]
+    console.log('Found user:', user.id)
+
+    // Update user to confirm email
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
-      { email_confirm: true }
+      { email_confirmed_at: new Date().toISOString() }
     )
 
     if (updateError) {
+      console.error('Error updating user:', updateError)
       throw updateError
     }
+
+    console.log('Successfully confirmed email for user:', user.id)
 
     return new Response(
       JSON.stringify({ message: 'Email confirmed successfully' }),
@@ -46,6 +61,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in confirm-user-email function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
