@@ -1,133 +1,82 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export const handleFirstTimeAuth = async (memberId: string, password: string) => {
-  const cleanMemberId = memberId.toUpperCase().trim();
-  console.log("Handling first time auth for member:", cleanMemberId);
+  console.log("Handling first time auth for member:", memberId);
 
-  try {
-    // First, get the member details
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('email, first_time_login')
-      .eq('member_number', cleanMemberId)
-      .maybeSingle();
+  // First verify the member exists and credentials are correct
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .select('id, email, default_password_hash')
+    .eq('member_number', memberId.toUpperCase())
+    .maybeSingle();
 
-    if (memberError) {
-      console.error("Member lookup error:", memberError);
-      throw new Error("Error looking up member details");
-    }
+  if (memberError) {
+    console.error("Error checking member:", memberError);
+    throw new Error("Error verifying member details");
+  }
 
-    if (!member) {
-      console.error("No member found with ID:", cleanMemberId);
-      throw new Error("Invalid Member ID. Please check your credentials and try again.");
-    }
+  if (!member) {
+    console.error("No member found with ID:", memberId);
+    throw new Error("Invalid Member ID. Please check your credentials and try again.");
+  }
 
-    if (!member.first_time_login) {
-      console.error("Member has already completed first-time login:", cleanMemberId);
-      throw new Error("This member has already logged in. Please use the regular login page.");
-    }
+  // Verify password matches member ID for first login
+  if (password.toUpperCase() !== memberId.toUpperCase()) {
+    throw new Error("For first-time login, your password should be the same as your Member ID");
+  }
 
-    // Generate temporary email
-    const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
+  // Only proceed with sign-in if we haven't set up auth yet
+  if (!member.email?.includes('@temp.pwaburton.org')) {
+    // Create temporary email only at this point
+    const tempEmail = `${memberId.toLowerCase()}@temp.pwaburton.org`;
     console.log("Using temporary email for auth:", tempEmail);
 
-    // Sign out any existing session first
-    await supabase.auth.signOut();
-    await delay(2000); // Increased delay after signout
+    try {
+      // First try to sign in (in case user exists)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: tempEmail,
+        password: password,
+      });
 
-    // Try to sign in first
-    console.log("Attempting initial sign in");
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: tempEmail,
-      password: cleanMemberId
-    });
+      if (signInError) {
+        console.log("Sign in failed (expected for new users), proceeding with signup");
+        
+        // If sign in fails, create new auth user
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: tempEmail,
+          password: password,
+        });
 
-    if (!signInError) {
-      console.log("Sign in successful");
-      await updateMemberStatus(cleanMemberId);
-      return { success: true };
-    }
+        if (signUpError) {
+          console.error("Signup error:", signUpError);
+          throw signUpError;
+        }
 
-    // If sign in failed and it's not just invalid credentials, throw the error
-    if (signInError.status !== 400) {
-      throw signInError;
-    }
+        // Update member with temporary email
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ email: tempEmail })
+          .eq('id', member.id);
 
-    console.log("Sign in failed (expected for new users), proceeding with signup");
-    await delay(3000); // Delay before signup attempt
-
-    // Clear any existing sessions before new attempt
-    await supabase.auth.signOut();
-    await delay(2000);
-
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: tempEmail,
-      password: cleanMemberId,
-      options: {
-        emailRedirectTo: undefined, // Disable email redirect
-        data: {
-          member_number: cleanMemberId
+        if (updateError) {
+          console.error("Error updating member with temp email:", updateError);
+          throw updateError;
         }
       }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      throw error;
+    }
+  } else {
+    // If temp email exists, just sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: member.email,
+      password: password,
     });
 
-    if (signUpError) {
-      console.error("Signup error:", signUpError);
-      
-      if (signUpError.status === 429) {
-        throw new Error("We've hit our rate limit. Please wait 5 minutes before trying again.");
-      }
-      
-      throw signUpError;
+    if (signInError) {
+      console.error("Sign in error:", signInError);
+      throw signInError;
     }
-
-    if (!signUpData.user) {
-      throw new Error("No user data returned from signup");
-    }
-
-    console.log("Signup successful, waiting for processing");
-    await delay(3000);
-
-    // Final sign in attempt
-    const { error: finalSignInError } = await supabase.auth.signInWithPassword({
-      email: tempEmail,
-      password: cleanMemberId
-    });
-
-    if (finalSignInError) {
-      console.error("Final sign in error:", finalSignInError);
-      throw finalSignInError;
-    }
-
-    console.log("Authentication process completed successfully");
-    await updateMemberStatus(cleanMemberId);
-    return { success: true };
-
-  } catch (error: any) {
-    console.error("Authentication error:", error);
-    
-    if (error.status === 429) {
-      throw new Error("Rate limit exceeded. Please wait 5 minutes before trying again.");
-    }
-    
-    throw error;
-  }
-};
-
-const updateMemberStatus = async (memberId: string) => {
-  const { error: updateError } = await supabase
-    .from('members')
-    .update({ 
-      first_time_login: false,
-      email_verified: true,
-      password_changed: false
-    })
-    .eq('member_number', memberId);
-
-  if (updateError) {
-    console.error("Error updating member status:", updateError);
-    throw updateError;
   }
 };
