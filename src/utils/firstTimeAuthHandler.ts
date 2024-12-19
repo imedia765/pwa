@@ -26,11 +26,22 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
   }
 
   try {
-    // Use the temporary email format for authentication
+    // Create auth user with temporary email if doesn't exist
     const tempEmail = `${memberId.toLowerCase()}@temp.pwaburton.org`;
-    console.log("Attempting to sign in with:", tempEmail);
+    console.log("Setting up auth for:", tempEmail);
+    
+    // First try to create the auth user
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: tempEmail,
+      password: password.toUpperCase(),
+    });
 
-    // Attempt to sign in with the temporary credentials
+    if (signUpError && !signUpError.message.includes("User already registered")) {
+      console.error("Error creating auth user:", signUpError);
+      throw signUpError;
+    }
+
+    // Now attempt to sign in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: tempEmail,
       password: password.toUpperCase()
@@ -52,7 +63,8 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         password_changed: false,
         email_verified: false,
         profile_completed: false,
-        registration_completed: false
+        registration_completed: false,
+        email: tempEmail
       })
       .eq('id', member.id);
 
