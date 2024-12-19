@@ -27,16 +27,32 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
   try {
     // Step 3: Create or sign in with temporary email
-    // Using a more standard email domain that Supabase will accept
-    const tempEmail = `${memberId.toLowerCase()}@temporary.pwaburton.com`;
+    const tempEmail = `${memberId.toLowerCase()}@pwaburton.temporary.org`;
     console.log("Setting up auth for:", tempEmail);
 
-    // Always try to create the user first
+    // Try to sign in first in case the user already exists
+    try {
+      console.log("Attempting sign in first");
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: tempEmail,
+        password: password.toUpperCase()
+      });
+
+      if (!signInError) {
+        console.log("Sign in successful for existing user");
+        await updateMemberStatus(member.id, tempEmail);
+        return { success: true };
+      }
+    } catch (signInError) {
+      console.log("Initial sign in attempt failed, will try creating user");
+    }
+
+    // If sign in failed, try to create the user
+    console.log("Creating new user");
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: tempEmail,
       password: password.toUpperCase(),
       options: {
-        emailRedirectTo: window.location.origin,
         data: {
           member_id: member.id
         }
@@ -44,50 +60,47 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     });
 
     if (signUpError) {
-      // If user already exists, try signing in directly
-      if (signUpError.message.includes("User already registered")) {
-        console.log("User exists, attempting sign in");
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: tempEmail,
-          password: password.toUpperCase()
-        });
-
-        if (signInError) {
-          console.error("Error signing in:", signInError);
-          throw signInError;
-        }
-
-        console.log("Sign in successful for existing user");
-      } else {
-        console.error("Error creating auth user:", signUpError);
-        throw signUpError;
-      }
-    } else {
-      console.log("New user created successfully");
+      console.error("Error creating auth user:", signUpError);
+      throw signUpError;
     }
 
-    // Step 4: Update member record to reflect first-time login status
-    const { error: updateError } = await supabase
-      .from('members')
-      .update({
-        first_time_login: true,
-        password_changed: false,
-        email_verified: false,
-        profile_completed: false,
-        registration_completed: false,
-        email: tempEmail
-      })
-      .eq('id', member.id);
+    // Try signing in after creating the user
+    console.log("Signing in after user creation");
+    const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+      email: tempEmail,
+      password: password.toUpperCase()
+    });
 
-    if (updateError) {
-      console.error("Error updating member status:", updateError);
-      throw new Error("Failed to update member status");
+    if (finalSignInError) {
+      console.error("Error signing in after user creation:", finalSignInError);
+      throw finalSignInError;
     }
+
+    // Update member status
+    await updateMemberStatus(member.id, tempEmail);
 
     return { success: true };
-
   } catch (error) {
     console.error("Authentication error:", error);
     throw error;
+  }
+};
+
+const updateMemberStatus = async (memberId: string, email: string) => {
+  const { error: updateError } = await supabase
+    .from('members')
+    .update({
+      first_time_login: true,
+      password_changed: false,
+      email_verified: false,
+      profile_completed: false,
+      registration_completed: false,
+      email: email
+    })
+    .eq('id', memberId);
+
+  if (updateError) {
+    console.error("Error updating member status:", updateError);
+    throw new Error("Failed to update member status");
   }
 };
