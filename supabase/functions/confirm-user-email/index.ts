@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -7,85 +7,50 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { email } = await req.json()
-    console.log('Confirming email for:', email)
-
-    if (!email) {
-      throw new Error('Email is required')
-    }
-
-    // Initialize Supabase client with admin privileges
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get the user by email with retries
-    let users = null;
-    let getUserError = null;
-    const maxRetries = 3;
+    const { email } = await req.json()
+
+    if (!email) {
+      throw new Error('Email is required')
+    }
+
+    const { data: user, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email)
     
-    for (let i = 0; i < maxRetries; i++) {
-      console.log(`Attempt ${i + 1}/${maxRetries} to get user`);
-      
-      const response = await supabaseAdmin.auth.admin.listUsers({
-        filter: { email: email }
-      });
-      
-      if (!response.error && response.data.users.length > 0) {
-        users = response.data.users;
-        break;
-      }
-      
-      getUserError = response.error;
-      if (i < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
-      }
+    if (getUserError || !user) {
+      throw new Error('User not found')
     }
 
-    if (getUserError || !users || users.length === 0) {
-      console.error('Error getting user:', getUserError || 'No user found');
-      throw new Error(getUserError?.message || 'User not found');
-    }
-
-    console.log('Found user:', users[0].id);
-
-    // Update the user's email confirmation status
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      users[0].id,
-      { email_confirmed: true }
+      user.id,
+      { email_confirm: true }
     )
 
     if (updateError) {
-      console.error('Error updating user:', updateError);
-      throw updateError;
+      throw updateError
     }
-
-    console.log('Successfully confirmed email for user:', users[0].id);
 
     return new Response(
       JSON.stringify({ message: 'Email confirmed successfully' }),
-      {
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        status: 200 
       }
     )
   } catch (error) {
-    console.error('Error in confirm-user-email function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.stack 
-      }),
-      {
+      JSON.stringify({ error: error.message }),
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 400
       }
     )
   }

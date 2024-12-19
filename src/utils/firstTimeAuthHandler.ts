@@ -45,6 +45,17 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         return { success: true };
       }
 
+      if (signInError?.message === "Email not confirmed") {
+        console.log("Email not confirmed, attempting to resend confirmation");
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email: tempEmail,
+        });
+        if (resendError) {
+          console.error("Error resending confirmation:", resendError);
+        }
+      }
+
       console.log("Sign in failed, will try creating user:", signInError);
     } catch (signInError) {
       console.log("Initial sign in attempt failed:", signInError);
@@ -59,7 +70,8 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         data: {
           member_id: member.id,
           member_number: memberId.toUpperCase(),
-        }
+        },
+        emailRedirectTo: window.location.origin + '/login'
       }
     });
 
@@ -69,6 +81,19 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     }
 
     console.log("User created successfully:", signUpData);
+
+    // For development, we'll automatically confirm the email
+    if (signUpData.user && !signUpData.user.email_confirmed_at) {
+      console.log("Email not confirmed, attempting admin confirmation");
+      const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
+        body: { email: tempEmail }
+      });
+      
+      if (confirmError) {
+        console.error("Error confirming email:", confirmError);
+        throw new Error("Failed to confirm email automatically. Please check your email for confirmation link.");
+      }
+    }
 
     // Wait a moment before attempting to sign in
     await new Promise(resolve => setTimeout(resolve, 1000));
