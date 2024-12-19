@@ -26,31 +26,14 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
   }
 
   try {
-    // Create auth user with temporary email
-    const tempEmail = `${memberId.toLowerCase()}@pwaburton.org`;
-    console.log("Attempting to create/sign in user with:", tempEmail);
-    
-    // Attempt to sign up (this will either create a new user or fail if the user exists)
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: tempEmail,
-      password: password,
-      options: {
-        data: {
-          member_id: member.id
-        }
-      }
-    });
-
-    if (signUpError && signUpError.message !== "User already registered") {
-      console.error("Sign up error:", signUpError);
-      throw signUpError;
-    }
-
-    // Now attempt to sign in
+    // Use the temporary email format for authentication
+    const tempEmail = `${memberId.toLowerCase()}@temp.pwaburton.org`;
     console.log("Attempting to sign in with:", tempEmail);
+
+    // Attempt to sign in with the temporary credentials
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: tempEmail,
-      password: password,
+      password: password.toUpperCase()
     });
 
     if (signInError) {
@@ -60,14 +43,16 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     console.log("Sign in successful:", signInData);
 
-    // Update member to mark as pending email update
+    // Update member to mark as pending profile update
     const { error: updateError } = await supabase
       .from('members')
       .update({ 
         first_time_login: true,
         profile_updated: false,
         password_changed: false,
-        email: tempEmail
+        email_verified: false,
+        profile_completed: false,
+        registration_completed: false
       })
       .eq('id', member.id);
 
@@ -75,6 +60,8 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       console.error("Error updating member status:", updateError);
       throw updateError;
     }
+
+    return signInData;
 
   } catch (error) {
     console.error("Authentication error:", error);

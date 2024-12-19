@@ -20,7 +20,7 @@ export default function FirstTimeLogin() {
         title: "Login successful",
         description: "Welcome! Please update your profile information.",
       });
-      navigate('/change-password');
+      navigate('/profile');
     } catch (error) {
       console.error("First time login error:", error);
       toast({
