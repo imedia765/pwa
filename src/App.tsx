@@ -8,6 +8,7 @@ import { NavigationMenu } from "@/components/NavigationMenu";
 import Footer from "@/components/Footer";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import FirstTimeLogin from "./pages/FirstTimeLogin";
 import Register from "./pages/Register";
 import ChangePassword from "./pages/ChangePassword";
 import TermsAndConditions from "./pages/TermsAndConditions";
@@ -38,6 +39,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/first-time-login" element={<FirstTimeLogin />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/change-password" element={<ChangePassword />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
