@@ -29,32 +29,36 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     // Step 3: Create or sign in with temporary email
     const tempEmail = `${memberId.toLowerCase()}@pwaburton.temporary.org`;
     console.log("Setting up auth for:", tempEmail);
+    const upperPassword = password.toUpperCase();
 
     // Try to sign in first in case the user already exists
     try {
-      console.log("Attempting sign in first");
+      console.log("Attempting sign in with:", { email: tempEmail, password: upperPassword });
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: tempEmail,
-        password: password.toUpperCase()
+        password: upperPassword,
       });
 
-      if (!signInError) {
-        console.log("Sign in successful for existing user");
+      if (!signInError && signInData.user) {
+        console.log("Sign in successful for existing user:", signInData);
         await updateMemberStatus(member.id, tempEmail);
         return { success: true };
       }
+
+      console.log("Sign in failed, will try creating user:", signInError);
     } catch (signInError) {
-      console.log("Initial sign in attempt failed, will try creating user");
+      console.log("Initial sign in attempt failed:", signInError);
     }
 
     // If sign in failed, try to create the user
-    console.log("Creating new user");
+    console.log("Creating new user with:", { email: tempEmail, password: upperPassword });
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: tempEmail,
-      password: password.toUpperCase(),
+      password: upperPassword,
       options: {
         data: {
-          member_id: member.id
+          member_id: member.id,
+          member_number: memberId.toUpperCase(),
         }
       }
     });
@@ -64,17 +68,24 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       throw signUpError;
     }
 
+    console.log("User created successfully:", signUpData);
+
+    // Wait a moment before attempting to sign in
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Try signing in after creating the user
-    console.log("Signing in after user creation");
-    const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+    console.log("Attempting final sign in");
+    const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
       email: tempEmail,
-      password: password.toUpperCase()
+      password: upperPassword,
     });
 
-    if (finalSignInError) {
+    if (finalSignInError || !finalSignInData.user) {
       console.error("Error signing in after user creation:", finalSignInError);
-      throw finalSignInError;
+      throw finalSignInError || new Error("Failed to sign in after user creation");
     }
+
+    console.log("Final sign in successful:", finalSignInData);
 
     // Update member status
     await updateMemberStatus(member.id, tempEmail);
