@@ -87,12 +87,6 @@ const handleSuccessfulLogin = async (session: any, navigate: (path: string) => v
       return;
     }
 
-    // Check if email is temporary
-    if (member && user.email.endsWith('@temp.pwaburton.org')) {
-      navigate("/profile");
-      return;
-    }
-
     // Check if profile needs to be updated
     if (member && !member.profile_updated) {
       navigate("/profile");

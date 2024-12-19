@@ -25,58 +25,35 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     throw new Error("For first-time login, your password should be the same as your Member ID");
   }
 
-  // Only proceed with sign-in if we haven't set up auth yet
-  if (!member.email?.includes('@temp.pwaburton.org')) {
-    // Create temporary email only at this point
-    const tempEmail = `${memberId.toLowerCase()}@temp.pwaburton.org`;
-    console.log("Using temporary email for auth:", tempEmail);
-
-    try {
-      // First try to sign in (in case user exists)
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: tempEmail,
-        password: password,
-      });
-
-      if (signInError) {
-        console.log("Sign in failed (expected for new users), proceeding with signup");
-        
-        // If sign in fails, create new auth user
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: tempEmail,
-          password: password,
-        });
-
-        if (signUpError) {
-          console.error("Signup error:", signUpError);
-          throw signUpError;
-        }
-
-        // Update member with temporary email
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ email: tempEmail })
-          .eq('id', member.id);
-
-        if (updateError) {
-          console.error("Error updating member with temp email:", updateError);
-          throw updateError;
-        }
-      }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      throw error;
-    }
-  } else {
-    // If temp email exists, just sign in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: member.email,
+  try {
+    // Create auth user with member ID as temporary identifier
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: memberId.toLowerCase() + '@placeholder.temp',
       password: password,
     });
 
-    if (signInError) {
-      console.error("Sign in error:", signInError);
-      throw signInError;
+    if (signUpError) {
+      console.error("Signup error:", signUpError);
+      throw signUpError;
     }
+
+    // Update member to mark as pending email update
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({ 
+        first_time_login: true,
+        profile_updated: false,
+        password_changed: false
+      })
+      .eq('id', member.id);
+
+    if (updateError) {
+      console.error("Error updating member status:", updateError);
+      throw updateError;
+    }
+
+  } catch (error) {
+    console.error("Authentication error:", error);
+    throw error;
   }
 };
