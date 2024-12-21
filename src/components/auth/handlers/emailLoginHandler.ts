@@ -12,7 +12,14 @@ export const handleEmailLogin = async (
     // First check if the user exists in the members table
     const { data: memberData, error: memberError } = await supabase
       .from('members')
-      .select('email, email_verified, first_time_login, profile_completed')
+      .select(`
+        email, 
+        email_verified, 
+        first_time_login, 
+        profile_completed,
+        full_name,
+        member_number
+      `)
       .eq('email', email.toLowerCase())
       .maybeSingle();
 
