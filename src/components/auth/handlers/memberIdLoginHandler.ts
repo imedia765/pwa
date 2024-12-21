@@ -9,10 +9,10 @@ export const handleMemberIdLogin = async (
   try {
     console.log("Attempting member ID login for:", memberId);
 
-    // First get the member's email using member number
+    // First get the member's data using member number
     const { data: memberData, error: memberError } = await supabase
       .from('members')
-      .select('email, full_name')
+      .select('*')
       .eq('member_number', memberId)
       .maybeSingle();
 
@@ -63,18 +63,27 @@ export const handleMemberIdLogin = async (
       throw profileError;
     }
 
-    // If no profile exists, create one
+    // If no profile exists, create one with member data
     if (!existingProfile) {
       console.log("Creating new profile for user:", signInData.user.id);
       
-      const { error: createError } = await supabase.rpc(
-        'create_profile',
-        {
-          p_id: signInData.user.id,
-          p_email: memberData.email,
-          p_user_id: signInData.user.id
-        }
-      );
+      const { error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: signInData.user.id,
+          email: memberData.email,
+          user_id: signInData.user.id,
+          full_name: memberData.full_name,
+          member_number: memberData.member_number,
+          date_of_birth: memberData.date_of_birth,
+          gender: memberData.gender,
+          marital_status: memberData.marital_status,
+          phone: memberData.phone,
+          address: memberData.address,
+          postcode: memberData.postcode,
+          town: memberData.town,
+          profile_completed: memberData.profile_completed
+        });
 
       if (createError) {
         console.error("Error creating profile:", createError);

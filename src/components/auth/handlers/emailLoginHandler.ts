@@ -7,12 +7,12 @@ export const handleEmailLogin = async (
   { toast }: ToastType
 ) => {
   try {
-    console.log("Attempting email login for:", email);
+    console.log("Attempting email login for:", email.toLowerCase());
 
     // First check if the user exists in the members table
     const { data: memberData, error: memberError } = await supabase
       .from('members')
-      .select('email, email_verified, first_time_login')
+      .select('email, email_verified, first_time_login, profile_completed')
       .eq('email', email.toLowerCase())
       .maybeSingle();
 
@@ -61,25 +61,27 @@ export const handleEmailLogin = async (
       .from('profiles')
       .select('*')
       .eq('id', signInData.user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError && profileError.code !== 'PGRST116') {
       console.error("Error checking profile:", profileError);
       throw profileError;
     }
 
-    // If no profile exists, create one
+    // If no profile exists, create one with member data
     if (!existingProfile) {
       console.log("Creating new profile for user:", signInData.user.id);
       
-      const { error: createError } = await supabase.rpc(
-        'create_profile',
-        {
-          p_id: signInData.user.id,
-          p_email: email.toLowerCase(),
-          p_user_id: signInData.user.id
-        }
-      );
+      const { error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: signInData.user.id,
+          email: email.toLowerCase(),
+          user_id: signInData.user.id,
+          full_name: memberData.full_name,
+          member_number: memberData.member_number,
+          profile_completed: memberData.profile_completed
+        });
 
       if (createError) {
         console.error("Error creating profile:", createError);
