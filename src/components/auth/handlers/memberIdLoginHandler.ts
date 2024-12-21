@@ -26,14 +26,19 @@ export const handleMemberIdLogin = async (
       throw new Error("Member not found. Please check your Member ID.");
     }
 
-    if (!memberData.email) {
-      console.error("Member has no email:", memberId);
-      throw new Error("Member account not properly configured. Please contact support.");
+    // For first-time login, the password should match the member ID
+    if (memberData.first_time_login && password !== memberId) {
+      throw new Error("For first-time login, use your Member ID as the password.");
     }
+
+    // If no email is set, use the temporary email
+    const loginEmail = memberData.email || `${memberId.toLowerCase()}@temp.pwaburton.org`;
+
+    console.log("Attempting login with email:", loginEmail);
 
     // Sign in with email and password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: memberData.email,
+      email: loginEmail,
       password: password,
     });
 
@@ -71,7 +76,7 @@ export const handleMemberIdLogin = async (
         .from('profiles')
         .insert({
           id: signInData.user.id,
-          email: memberData.email,
+          email: loginEmail,
           user_id: signInData.user.id,
           full_name: memberData.full_name,
           member_number: memberData.member_number,
@@ -88,6 +93,22 @@ export const handleMemberIdLogin = async (
       if (createError) {
         console.error("Error creating profile:", createError);
         throw createError;
+      }
+    }
+
+    // If this was a first-time login, update the member record
+    if (memberData.first_time_login) {
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({
+          first_time_login: false,
+          password_changed: false
+        })
+        .eq('id', memberData.id);
+
+      if (updateError) {
+        console.error("Error updating member first_time_login:", updateError);
+        // Don't throw here, as login was successful
       }
     }
 

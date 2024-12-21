@@ -18,7 +18,14 @@ export const handleEmailLogin = async (
         first_time_login, 
         profile_completed,
         full_name,
-        member_number
+        member_number,
+        date_of_birth,
+        gender,
+        marital_status,
+        phone,
+        address,
+        postcode,
+        town
       `)
       .eq('email', email.toLowerCase())
       .maybeSingle();
@@ -87,6 +94,13 @@ export const handleEmailLogin = async (
           user_id: signInData.user.id,
           full_name: memberData.full_name,
           member_number: memberData.member_number,
+          date_of_birth: memberData.date_of_birth,
+          gender: memberData.gender,
+          marital_status: memberData.marital_status,
+          phone: memberData.phone,
+          address: memberData.address,
+          postcode: memberData.postcode,
+          town: memberData.town,
           profile_completed: memberData.profile_completed
         });
 
