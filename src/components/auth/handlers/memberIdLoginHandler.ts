@@ -43,7 +43,7 @@ export const handleMemberIdLogin = async (
       throw new Error("Invalid password");
     }
 
-    // Generate a valid email for authentication
+    // Use member's email if available, otherwise use member number
     const loginEmail = memberData.email || `${memberId.toLowerCase()}@member.pwaburton.org`;
     console.log("Attempting login with email:", loginEmail);
 
@@ -55,10 +55,9 @@ export const handleMemberIdLogin = async (
         password: password,
         options: {
           data: {
-            email: loginEmail,
-            email_verified: false,
             member_id: memberData.id,
             member_number: memberData.member_number,
+            email_verified: false,
             phone_verified: false
           }
         }
