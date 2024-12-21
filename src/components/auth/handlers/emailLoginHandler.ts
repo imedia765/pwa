@@ -9,13 +9,44 @@ export const handleEmailLogin = async (
   try {
     console.log("Attempting email login for:", email);
 
+    // First check if the user exists in the members table
+    const { data: memberData, error: memberError } = await supabase
+      .from('members')
+      .select('email, email_verified, first_time_login')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (memberError) {
+      console.error("Error checking member:", memberError);
+      throw new Error("Error verifying member status");
+    }
+
+    if (!memberData) {
+      console.error("No member found with email:", email);
+      throw new Error("No account found with this email address");
+    }
+
+    if (memberData.first_time_login) {
+      console.error("Member needs to use first-time login:", email);
+      throw new Error("Please use the Member ID tab for your first login");
+    }
+
+    // Clear any existing session first
+    await supabase.auth.signOut();
+
+    // Attempt to sign in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: email.toLowerCase(),
+      password: password,
     });
 
     if (signInError) {
       console.error("Sign in error:", signInError);
+      
+      if (signInError.message.includes("Invalid login credentials")) {
+        throw new Error("Invalid email or password");
+      }
+      
       throw signInError;
     }
 
@@ -45,7 +76,7 @@ export const handleEmailLogin = async (
         'create_profile',
         {
           p_id: signInData.user.id,
-          p_email: email,
+          p_email: email.toLowerCase(),
           p_user_id: signInData.user.id
         }
       );
