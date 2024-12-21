@@ -36,9 +36,13 @@ export const handleMemberIdLogin = async (
 
     console.log("Attempting login with email:", loginEmail);
 
-    // For first-time login, create the auth user first
-    if (memberData.first_time_login) {
-      console.log("First time login, creating auth user");
+    // Check if auth user exists
+    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
+    const existingUser = users?.find(u => u.email === loginEmail);
+
+    // For first-time login or if user doesn't exist, create the auth user
+    if (memberData.first_time_login || !existingUser) {
+      console.log("Creating new auth user");
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: loginEmail,
         password: password,
@@ -58,9 +62,6 @@ export const handleMemberIdLogin = async (
       // Wait a moment for the user to be created
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
-    // Clear any existing session first
-    await supabase.auth.signOut();
 
     // Sign in with email and password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({

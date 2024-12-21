@@ -19,6 +19,7 @@ export const handleEmailLogin = async (
         profile_completed,
         full_name,
         member_number,
+        id,
         date_of_birth,
         gender,
         marital_status,
@@ -45,10 +46,7 @@ export const handleEmailLogin = async (
       throw new Error("Please use the Member ID tab for your first login");
     }
 
-    // Clear any existing session first
-    await supabase.auth.signOut();
-
-    // Attempt to sign in
+    // Sign in with email and password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.toLowerCase(),
       password: password,
