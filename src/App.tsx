@@ -4,8 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { NavigationMenu } from "@/components/NavigationMenu";
-import Footer from "@/components/Footer";
+import { Footer } from "@/components/Footer";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import FirstTimeLogin from "./pages/FirstTimeLogin";
@@ -33,32 +34,34 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <NavigationMenu />
-            <div className="flex-grow">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/first-time-login" element={<FirstTimeLogin />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/change-password" element={<ChangePassword />} />
-                <Route path="/terms" element={<TermsAndConditions />} />
-                <Route path="/collector-responsibilities" element={<CollectorResponsibilities />} />
-                <Route path="/medical-examiner-process" element={<MedicalExaminerProcess />} />
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="members" element={<Members />} />
-                  <Route path="collectors" element={<Collectors />} />
-                  <Route path="registrations" element={<Registrations />} />
-                  <Route path="database" element={<Database />} />
-                  <Route path="finance" element={<Finance />} />
-                  <Route path="support" element={<Support />} />
-                  <Route path="profile" element={<Profile />} />
-                </Route>
-              </Routes>
+          <AuthProvider>
+            <div className="min-h-screen flex flex-col">
+              <NavigationMenu />
+              <div className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/first-time-login" element={<FirstTimeLogin />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/change-password" element={<ChangePassword />} />
+                  <Route path="/terms" element={<TermsAndConditions />} />
+                  <Route path="/collector-responsibilities" element={<CollectorResponsibilities />} />
+                  <Route path="/medical-examiner-process" element={<MedicalExaminerProcess />} />
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="members" element={<Members />} />
+                    <Route path="collectors" element={<Collectors />} />
+                    <Route path="registrations" element={<Registrations />} />
+                    <Route path="database" element={<Database />} />
+                    <Route path="finance" element={<Finance />} />
+                    <Route path="support" element={<Support />} />
+                    <Route path="profile" element={<Profile />} />
+                  </Route>
+                </Routes>
+              </div>
+              <Footer />
             </div>
-            <Footer />
-          </div>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

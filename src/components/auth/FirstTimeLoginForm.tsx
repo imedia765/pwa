@@ -24,7 +24,7 @@ export const FirstTimeLoginForm = ({ onSubmit, isLoading }: FirstTimeLoginFormPr
         <InfoIcon className="h-4 w-4 text-blue-500" />
         <AlertDescription className="text-sm text-blue-700">
           For your first login, use your Member ID (e.g. TM20001) as both your username and password.
-          You'll be prompted to update your email and password after logging in.
+          You'll be redirected to complete your profile after logging in.
         </AlertDescription>
       </Alert>
 
