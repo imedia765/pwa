@@ -9,31 +9,42 @@ export const handleMemberIdLogin = async (
   try {
     console.log("Attempting member ID login for:", memberId);
 
-    // First get the member's data using member number
+    // First check if the member exists
     const { data: memberData, error: memberError } = await supabase
       .from('members')
-      .select('*')
-      .eq('member_number', memberId)
+      .select(`
+        id,
+        member_number,
+        email,
+        full_name,
+        first_time_login,
+        profile_completed,
+        email_verified,
+        default_password_hash,
+        password_changed
+      `)
+      .eq('member_number', memberId.toUpperCase())
       .maybeSingle();
 
     if (memberError) {
-      console.error("Member lookup error:", memberError);
-      throw new Error("Error looking up member");
+      console.error("Error checking member:", memberError);
+      throw new Error("Error verifying member status");
     }
 
     if (!memberData) {
       console.error("No member found with ID:", memberId);
-      throw new Error("Member not found. Please check your Member ID.");
+      throw new Error("Invalid Member ID");
     }
 
-    // For first-time login, the password should match the member ID
-    if (memberData.first_time_login && password !== memberId) {
-      throw new Error("For first-time login, use your Member ID as the password.");
+    // Verify password hash matches
+    const hashedPassword = await hashPassword(password);
+    if (hashedPassword !== memberData.default_password_hash) {
+      console.error("Password mismatch for member:", memberId);
+      throw new Error("Invalid password");
     }
 
-    // If no email is set, use the temporary email
-    const loginEmail = memberData.email || `${memberId.toLowerCase()}@temp.pwaburton.org`;
-
+    // Generate a valid email for authentication
+    const loginEmail = memberData.email || `${memberId.toLowerCase()}@member.pwaburton.org`;
     console.log("Attempting login with email:", loginEmail);
 
     // For first-time login, create the auth user
@@ -44,22 +55,45 @@ export const handleMemberIdLogin = async (
         password: password,
         options: {
           data: {
+            email: loginEmail,
+            email_verified: false,
             member_id: memberData.id,
-            member_number: memberId,
+            member_number: memberData.member_number,
+            phone_verified: false
           }
         }
       });
 
       if (signUpError) {
-        console.error("Error creating auth user:", signUpError);
+        console.error("Sign up error:", signUpError);
         throw signUpError;
       }
 
-      // Wait a moment for the user to be created
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!signUpData.user) {
+        throw new Error("No user data returned after signup");
+      }
+
+      // Update member record to mark first time login complete
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({
+          first_time_login: false,
+          email: loginEmail,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', memberData.id);
+
+      if (updateError) {
+        console.error("Error updating member:", updateError);
+        throw updateError;
+      }
+
+      console.log("First-time login successful for member:", memberId);
+      return true;
     }
 
-    // Sign in with email and password
+    // For subsequent logins, sign in with email and password
+    console.log("Attempting regular sign in for member:", memberId);
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password: password,
@@ -67,9 +101,6 @@ export const handleMemberIdLogin = async (
 
     if (signInError) {
       console.error("Sign in error:", signInError);
-      if (signInError.message.includes("Invalid login credentials")) {
-        throw new Error("Invalid password. For first-time login, use your Member ID as the password.");
-      }
       throw signInError;
     }
 
@@ -77,65 +108,9 @@ export const handleMemberIdLogin = async (
       throw new Error("No user data returned after login");
     }
 
-    console.log("User signed in successfully:", signInData.user.id);
-
-    // Check if profile exists
-    const { data: existingProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', signInData.user.id)
-      .maybeSingle();
-
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error("Error checking profile:", profileError);
-      throw profileError;
-    }
-
-    // If no profile exists, create one with member data
-    if (!existingProfile) {
-      console.log("Creating new profile for user:", signInData.user.id);
-      
-      const { error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          id: signInData.user.id,
-          email: loginEmail,
-          user_id: signInData.user.id,
-          full_name: memberData.full_name,
-          member_number: memberData.member_number,
-          date_of_birth: memberData.date_of_birth,
-          gender: memberData.gender,
-          marital_status: memberData.marital_status,
-          phone: memberData.phone,
-          address: memberData.address,
-          postcode: memberData.postcode,
-          town: memberData.town,
-          profile_completed: memberData.profile_completed
-        });
-
-      if (createError) {
-        console.error("Error creating profile:", createError);
-        throw createError;
-      }
-    }
-
-    // If this was a first-time login, update the member record
-    if (memberData.first_time_login) {
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({
-          first_time_login: false,
-          password_changed: false
-        })
-        .eq('id', memberData.id);
-
-      if (updateError) {
-        console.error("Error updating member first_time_login:", updateError);
-        // Don't throw here, as login was successful
-      }
-    }
-
+    console.log("Regular login successful for member:", memberId);
     return true;
+
   } catch (error) {
     console.error("Login process error:", error);
     toast({
@@ -145,4 +120,13 @@ export const handleMemberIdLogin = async (
     });
     return false;
   }
+};
+
+// Helper function to hash password
+const hashPassword = async (password: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
