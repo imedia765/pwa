@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ToastType } from "@/hooks/use-toast";
+import { User } from '@supabase/supabase-js';
 
 export const handleMemberIdLogin = async (
   memberId: string,
@@ -38,7 +39,15 @@ export const handleMemberIdLogin = async (
 
     // Check if auth user exists
     const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
-    const existingUser = users?.find(u => u.email === loginEmail);
+    
+    if (getUserError) {
+      console.error("Error checking existing users:", getUserError);
+      throw new Error("Error verifying user status");
+    }
+
+    const existingUser = users && Array.isArray(users) ? 
+      users.find((user: User) => user.email === loginEmail) : 
+      undefined;
 
     // For first-time login or if user doesn't exist, create the auth user
     if (memberData.first_time_login || !existingUser) {
