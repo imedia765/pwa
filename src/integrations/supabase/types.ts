@@ -209,6 +209,7 @@ export type Database = {
       members: {
         Row: {
           address: string | null
+          auth_user_id: string | null
           collector: string | null
           collector_id: string | null
           cors_enabled: boolean | null
@@ -237,6 +238,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          auth_user_id?: string | null
           collector?: string | null
           collector_id?: string | null
           cors_enabled?: boolean | null
@@ -265,6 +267,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          auth_user_id?: string | null
           collector?: string | null
           collector_id?: string | null
           cors_enabled?: boolean | null
