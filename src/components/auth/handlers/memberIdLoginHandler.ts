@@ -72,12 +72,12 @@ export const handleMemberIdLogin = async (
         throw new Error("No user data returned after signup");
       }
 
-      // Update member record to mark first time login complete
+      // Update member record to mark first time login complete and store auth user id
       const { error: updateError } = await supabase
         .from('members')
         .update({
           first_time_login: false,
-          email: loginEmail,
+          auth_user_id: signUpData.user.id, // Store the auth user ID
           updated_at: new Date().toISOString()
         })
         .eq('id', memberData.id);
@@ -105,6 +105,22 @@ export const handleMemberIdLogin = async (
 
     if (!signInData.user) {
       throw new Error("No user data returned after login");
+    }
+
+    // Update the auth_user_id if it's not set
+    if (!memberData.auth_user_id) {
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({
+          auth_user_id: signInData.user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', memberData.id);
+
+      if (updateError) {
+        console.error("Error updating member auth_user_id:", updateError);
+        // Don't throw here, as login was successful
+      }
     }
 
     console.log("Regular login successful for member:", memberId);
