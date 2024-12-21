@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ToastType } from "@/hooks/use-toast";
+import { Member } from "@/integrations/supabase/types/member";
 
 export const handleMemberIdLogin = async (
   memberId: string,
@@ -21,7 +22,8 @@ export const handleMemberIdLogin = async (
         profile_completed,
         email_verified,
         default_password_hash,
-        password_changed
+        password_changed,
+        auth_user_id
       `)
       .eq('member_number', memberId.toUpperCase())
       .maybeSingle();
@@ -77,7 +79,7 @@ export const handleMemberIdLogin = async (
         .from('members')
         .update({
           first_time_login: false,
-          auth_user_id: signUpData.user.id, // Store the auth user ID
+          auth_user_id: signUpData.user.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', memberData.id);
