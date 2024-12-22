@@ -309,6 +309,7 @@ export type Database = {
           amount: number
           collector_id: string | null
           created_at: string
+          created_by: string | null
           id: string
           member_id: string | null
           notes: string | null
@@ -321,6 +322,7 @@ export type Database = {
           amount: number
           collector_id?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           member_id?: string | null
           notes?: string | null
@@ -333,6 +335,7 @@ export type Database = {
           amount?: number
           collector_id?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           member_id?: string | null
           notes?: string | null
