@@ -14,7 +14,7 @@ export function TransactionsTable({ type = 'all' }: TransactionsTableProps) {
         .from('payments')
         .select(`
           *,
-          members (
+          member:members (
             full_name
           )
         `)
@@ -57,7 +57,7 @@ export function TransactionsTable({ type = 'all' }: TransactionsTableProps) {
       <TableBody>
         {transactions.map((transaction) => (
           <TableRow key={transaction.id}>
-            <TableCell>{transaction.members?.full_name || transaction.notes || 'Unknown Member'}</TableCell>
+            <TableCell>{transaction.member?.full_name || transaction.notes || 'Unknown Member'}</TableCell>
             <TableCell>{transaction.payment_type}</TableCell>
             <TableCell>{new Date(transaction.payment_date).toLocaleDateString()}</TableCell>
             <TableCell className={Number(transaction.amount) < 0 ? "text-red-500" : "text-green-500"}>
