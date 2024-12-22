@@ -17,61 +17,21 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
         
         if (error) {
           console.error("Session check error:", error);
-          await handleAuthError(error);
           return;
         }
         
         if (session) {
-          console.log("Active session found");
+          console.log("Active session found, redirecting to admin/profile");
           setIsLoggedIn(true);
-          // Only navigate if we're not already on a valid route
-          if (window.location.pathname === '/') {
-            navigate("/admin/profile");
-          }
-        } else {
-          console.log("No active session");
-          setIsLoggedIn(false);
-          // Only navigate to login if we're not already there or on a public route
-          if (!['/login', '/register', '/'].includes(window.location.pathname)) {
-            navigate("/login");
-          }
+          navigate("/admin/profile");
         }
       } catch (error) {
         console.error("Session check failed:", error);
-        await handleAuthError(error);
       }
     };
 
-    const handleAuthError = async (error: any) => {
-      console.error("Auth error occurred:", error);
-      
-      // Clear any stale auth data
-      await supabase.auth.signOut();
-      setIsLoggedIn(false);
-      
-      // Clear local storage auth data
-      localStorage.removeItem('supabase.auth.token');
-      sessionStorage.removeItem('supabase.auth.token');
-      
-      // Only show toast if it's not a refresh token error
-      if (!error.message?.includes('refresh_token_not_found')) {
-        toast({
-          title: "Authentication Error",
-          description: "Please sign in again",
-          variant: "destructive",
-        });
-      }
-      
-      // Only navigate if we're not already on the login page
-      if (window.location.pathname !== '/login') {
-        navigate("/login");
-      }
-    };
-
-    // Initial session check
     checkSession();
 
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", { event, session });
       
@@ -84,36 +44,21 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
               title: "Signed in successfully",
               description: "Welcome back!",
             });
-            navigate("/admin/profile");
+            handleSuccessfulLogin(session, navigate);
           }
           break;
           
         case "SIGNED_OUT":
           console.log("User signed out");
           setIsLoggedIn(false);
-          navigate("/login");
           break;
           
         case "TOKEN_REFRESHED":
           console.log("Token refreshed successfully");
-          if (session) {
-            setIsLoggedIn(true);
-          }
           break;
           
         case "USER_UPDATED":
           console.log("User data updated");
-          break;
-          
-        case "INITIAL_SESSION":
-          if (!session) {
-            console.log("No initial session");
-            setIsLoggedIn(false);
-            // Only navigate if we're not already on a valid public route
-            if (!['/login', '/register', '/'].includes(window.location.pathname)) {
-              navigate("/login");
-            }
-          }
           break;
       }
     });
@@ -123,4 +68,47 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
       subscription.unsubscribe();
     };
   }, [navigate, setIsLoggedIn, toast]);
+};
+
+const handleSuccessfulLogin = async (session: any, navigate: (path: string) => void) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) return;
+
+    const { data: member, error } = await supabase
+      .from('members')
+      .select('password_changed, profile_updated, email_verified')
+      .eq('email', user.email)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error checking member status:", error);
+      navigate("/admin/profile");
+      return;
+    }
+
+    // Check if email is temporary
+    if (member && user.email.endsWith('@temp.pwaburton.org')) {
+      navigate("/admin/profile");
+      return;
+    }
+
+    // Check if profile needs to be updated
+    if (member && !member.profile_updated) {
+      navigate("/admin/profile");
+      return;
+    }
+
+    // Check if password needs to be changed
+    if (member && !member.password_changed) {
+      navigate("/change-password");
+      return;
+    }
+
+    // If all checks pass, redirect to profile
+    navigate("/admin/profile");
+  } catch (error) {
+    console.error("Error in handleSuccessfulLogin:", error);
+    navigate("/admin/profile");
+  }
 };

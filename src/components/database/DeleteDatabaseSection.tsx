@@ -22,9 +22,9 @@ const TABLES = [
   'ticket_responses',
   'support_tickets',
   'registrations',
-  'payments',
   'family_members',
   'admin_notes',
+  'payments',  // Moved after family_members and admin_notes
   'members',
   'collectors',
   'profiles'
@@ -46,13 +46,12 @@ export function DeleteDatabaseSection({ onDelete }: DeleteDatabaseSectionProps) 
       setIsDeleting(true);
       console.log("Starting database deletion...");
 
-      // Delete data from all tables in reverse order of dependencies
+      // Delete data from all tables in order
       for (const table of TABLES) {
         console.log(`Deleting all records from ${table}...`);
         const { error } = await supabase
           .from(table)
-          .delete()
-          .not('id', 'is', null); // Changed to delete all non-null IDs
+          .delete();  // Remove all conditions to delete all records
 
         if (error) {
           console.error(`Error deleting from ${table}:`, error);

@@ -16,12 +16,6 @@ export type Member = {
     town: string | null
     updated_at: string
     verified: boolean | null
-    auth_user_id: string | null
-    first_time_login: boolean | null
-    profile_completed: boolean | null
-    email_verified: boolean | null
-    default_password_hash: string | null
-    password_changed: boolean | null
   }
   Insert: {
     address?: string | null
@@ -40,12 +34,6 @@ export type Member = {
     town?: string | null
     updated_at?: string
     verified?: boolean | null
-    auth_user_id?: string | null
-    first_time_login?: boolean | null
-    profile_completed?: boolean | null
-    email_verified?: boolean | null
-    default_password_hash?: string | null
-    password_changed?: boolean | null
   }
   Update: {
     address?: string | null
@@ -64,12 +52,6 @@ export type Member = {
     town?: string | null
     updated_at?: string
     verified?: boolean | null
-    auth_user_id?: string | null
-    first_time_login?: boolean | null
-    profile_completed?: boolean | null
-    email_verified?: boolean | null
-    default_password_hash?: string | null
-    password_changed?: boolean | null
   }
   Relationships: [
     {

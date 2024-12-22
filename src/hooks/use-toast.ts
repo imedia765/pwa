@@ -15,10 +15,6 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 
-export type ToastType = {
-  toast: (props: { title?: string; description?: string; variant?: "default" | "destructive" }) => void
-}
-
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
   UPDATE_TOAST: "UPDATE_TOAST",
