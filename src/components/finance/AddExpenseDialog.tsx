@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DialogClose } from "@radix-ui/react-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Info } from "lucide-react";
 
@@ -20,8 +20,19 @@ interface ExpenseFormData {
 
 export function AddExpenseDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
+
   const form = useForm<ExpenseFormData>({
     defaultValues: {
       category: "",
@@ -31,6 +42,11 @@ export function AddExpenseDialog() {
   });
 
   const handleAddExpense = async (data: ExpenseFormData) => {
+    if (!userId) {
+      toast.error("User not authenticated");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
@@ -40,7 +56,8 @@ export function AddExpenseDialog() {
           amount: -Number(data.amount), // Negative amount for expenses
           payment_type: data.category,
           notes: data.description,
-          payment_date: new Date().toISOString()
+          payment_date: new Date().toISOString(),
+          created_by: userId // Adding the user reference
         });
 
       if (error) throw error;
