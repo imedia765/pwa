@@ -61,14 +61,14 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
               <UserCircle className="h-4 w-4" />
               Member ID
             </label>
-            <Input value={memberData?.member_number || ''} readOnly className="bg-gray-50" />
+            <Input value={memberData?.member_number || ''} readOnly className="bg-gray-50 text-black" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <User className="h-4 w-4" />
               Collector
             </label>
-            <Input value={memberData?.collector || ''} readOnly className="bg-gray-50" />
+            <Input value={memberData?.collector || ''} readOnly className="bg-gray-50 text-black" />
           </div>
         </div>
 
@@ -78,29 +78,29 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
               <User className="h-4 w-4" />
               Full Name
             </label>
-            <Input defaultValue={memberData?.full_name} />
+            <Input defaultValue={memberData?.full_name} className="text-black" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Address
             </label>
-            <Textarea defaultValue={memberData?.address || ""} />
+            <Textarea defaultValue={memberData?.address || ""} className="text-black" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Town</label>
-            <Input defaultValue={memberData?.town || ""} />
+            <Input defaultValue={memberData?.town || ""} className="text-black" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Post Code</label>
-            <Input defaultValue={memberData?.postcode || ""} />
+            <Input defaultValue={memberData?.postcode || ""} className="text-black" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Email
             </label>
-            <Input defaultValue={memberData?.email || ""} type="email" />
+            <Input defaultValue={memberData?.email || ""} type="email" className="text-black" />
           </div>
           <div className="space-y-2">
             <Button
@@ -117,7 +117,7 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
               <Phone className="h-4 w-4" />
               Mobile No
             </label>
-            <Input defaultValue={memberData?.phone || ""} type="tel" />
+            <Input defaultValue={memberData?.phone || ""} type="tel" className="text-black" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
@@ -127,6 +127,7 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
             <Input 
               type="date" 
               defaultValue={memberData?.date_of_birth || ""} 
+              className="text-black"
             />
           </div>
           <div className="space-y-2">
