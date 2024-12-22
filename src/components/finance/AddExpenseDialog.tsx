@@ -9,6 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Info } from "lucide-react";
 
 interface ExpenseFormData {
   category: string;
@@ -59,6 +61,21 @@ export function AddExpenseDialog() {
       <DialogHeader>
         <DialogTitle>Add New Expense</DialogTitle>
       </DialogHeader>
+
+      <Card className="bg-muted/50 mb-4">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-2">
+            <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div>
+              <p className="text-sm text-muted-foreground">
+                This form is for recording general organizational expenses. 
+                Member-specific payments should be recorded using the "Add Payment" form.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleAddExpense)} className="space-y-4">
           <FormField
