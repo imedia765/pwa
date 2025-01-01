@@ -24,100 +24,39 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     console.log("Found member:", { member_number: member.member_number, email });
 
-    // First check if user exists in auth system
-    const { data: { user: existingUser }, error: userCheckError } = await supabase.auth.getUser();
-    
-    if (userCheckError) {
-      console.error("Error checking user:", userCheckError);
-    }
-
-    // If user exists and is linked to this member, try password reset
-    if (existingUser && member.auth_user_id === existingUser.id) {
-      console.log("User exists and is linked, initiating password reset");
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`
-      });
-      
-      if (resetError) {
-        console.error('Password reset error:', resetError);
-        throw new Error("Unable to reset password. Please contact support.");
-      }
-      
-      throw new Error("A password reset link has been sent to your email.");
-    }
-
-    // Try to sign in with member number as password
+    // Try to sign in with email
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: member.member_number // Use member_number as initial password
+      password: member.member_number // Use member_number as password
     });
 
-    if (!signInError && signInData?.user) {
-      console.log("Sign in successful");
-      
-      // Update member record if not already linked
-      if (!member.auth_user_id) {
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ 
-            auth_user_id: signInData.user.id,
-            email_verified: true
-          })
-          .eq('member_number', member.member_number)
-          .single();
+    if (signInError) {
+      console.error('Sign in error:', signInError);
+      throw new Error("Invalid credentials. Please contact support if you need help accessing your account.");
+    }
 
-        if (updateError) {
-          console.error('Error updating member:', updateError);
-          // Continue anyway since sign in worked
-        }
+    if (!signInData?.user) {
+      throw new Error("Login failed. Please try again.");
+    }
+
+    // If not already linked, update member record with auth user id
+    if (!member.auth_user_id) {
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ 
+          auth_user_id: signInData.user.id,
+          email_verified: true
+        })
+        .eq('member_number', member.member_number)
+        .single();
+
+      if (updateError) {
+        console.error('Error updating member:', updateError);
+        // Continue anyway since sign in worked
       }
-      
-      navigate("/admin");
-      return;
     }
-
-    console.log("Sign in failed, attempting signup");
-
-    // Try to create new user
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: member.member_number, // Use member_number as initial password
-      options: {
-        data: {
-          member_number: member.member_number,
-          full_name: member.full_name
-        }
-      }
-    });
-
-    if (signUpError) {
-      console.error('Sign up error:', signUpError);
-      if (signUpError.message.includes("Database error saving new user")) {
-        throw new Error("Unable to create account. The email may already be in use. Please contact support.");
-      }
-      throw new Error(signUpError.message);
-    }
-
-    if (!signUpData?.user) {
-      throw new Error("Failed to create account");
-    }
-
-    // Update member record with auth user id
-    const { error: updateError } = await supabase
-      .from('members')
-      .update({ 
-        auth_user_id: signUpData.user.id,
-        email_verified: true
-      })
-      .eq('member_number', member.member_number)
-      .single();
-
-    if (updateError) {
-      console.error('Error updating member:', updateError);
-      throw new Error("Account created but failed to update member record. Please contact support.");
-    }
-
-    console.log("Account created successfully");
+    
+    console.log("Login successful");
     navigate("/admin");
 
   } catch (error) {
