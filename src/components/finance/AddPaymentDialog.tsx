@@ -61,6 +61,24 @@ export function AddPaymentDialog({ isOpen, onClose, onPaymentAdded }: AddPayment
     enabled: !!currentMember?.email && currentMember.role === 'collector',
   });
 
+  // Query to search for members
+  const { data: searchResults } = useQuery({
+    queryKey: ['memberSearch', searchTerm],
+    queryFn: async () => {
+      if (!searchTerm) return [];
+
+      const { data: members, error } = await supabase
+        .from('members')
+        .select('*')
+        .or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`)
+        .limit(10);
+
+      if (error) throw error;
+      return members || [];
+    },
+    enabled: searchTerm.length > 0,
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl">
@@ -76,7 +94,7 @@ export function AddPaymentDialog({ isOpen, onClose, onPaymentAdded }: AddPayment
                 setSearchTerm={setSearchTerm}
               />
               <MemberSearchResults
-                members={members || []}
+                members={searchResults || []}
                 onSelect={(member) => {
                   setSelectedMember(member);
                   setSearchTerm("");
