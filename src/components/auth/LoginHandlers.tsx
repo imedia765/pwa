@@ -20,7 +20,48 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     // Use member's email or generate a temporary one
     const email = member.email || `${cleanMemberId}@temp.pwaburton.org`;
 
-    // Attempt to sign in with member number as password
+    // If member doesn't have an auth account yet, create one
+    if (!member.auth_user_id) {
+      console.log("Creating new auth account for member");
+      
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: cleanMemberId,
+        options: {
+          data: {
+            member_number: cleanMemberId
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Error creating auth account:', signUpError);
+        throw new Error("Failed to create account. Please try again or contact support.");
+      }
+
+      if (signUpData?.user) {
+        // Link the new auth account to the member record
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ 
+            auth_user_id: signUpData.user.id,
+            email_verified: true
+          })
+          .eq('member_number', cleanMemberId)
+          .single();
+
+        if (updateError) {
+          console.error('Error linking new auth account:', updateError);
+          throw new Error("Account created but failed to update member record");
+        }
+
+        console.log("Successfully created and linked new auth account");
+        navigate("/admin");
+        return;
+      }
+    }
+
+    // For existing accounts, attempt to sign in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email,
       password: cleanMemberId
@@ -32,23 +73,6 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     }
 
     if (signInData?.user) {
-      // If sign in worked but we need to link the account
-      if (!member.auth_user_id) {
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ 
-            auth_user_id: signInData.user.id,
-            email_verified: true
-          })
-          .eq('member_number', cleanMemberId)
-          .single();
-
-        if (updateError) {
-          console.error('Error linking auth account:', updateError);
-          throw new Error("Error updating member record");
-        }
-      }
-
       console.log("Login successful");
       navigate("/admin");
       return;
