@@ -14,8 +14,8 @@ import { UserRole } from "@/types/roles";
 
 // Define menu items with role restrictions
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", to: "/admin", roles: ["admin", "collector"] }, // Added collector
-  { icon: Users, label: "Members", to: "/admin/members", roles: ["admin", "collector"] }, // Added collector
+  { icon: LayoutDashboard, label: "Dashboard", to: "/admin", roles: ["admin", "collector"] },
+  { icon: Users, label: "Members", to: "/admin/members", roles: ["admin", "collector"] },
   { icon: UserCheck, label: "Collectors", to: "/admin/collectors", roles: ["admin"] },
   { icon: ClipboardList, label: "Registrations", to: "/admin/registrations", roles: ["admin"] },
   { icon: Database, label: "Database", to: "/admin/database", roles: ["admin"] },
@@ -50,26 +50,26 @@ export function AdminLayout() {
           return;
         }
 
-        // Get user role from profiles table
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
+        // Get user role from members table instead of profiles
+        const { data: member, error: memberError } = await supabase
+          .from('members')
           .select('role')
-          .eq('id', session.user.id)
+          .eq('auth_user_id', session.user.id)
           .single();
 
-        if (profileError) {
-          console.error("Profile fetch error:", profileError);
+        if (memberError) {
+          console.error("Member fetch error:", memberError);
           setIsLoggedIn(false);
           navigate("/login");
           return;
         }
 
-        setUserRole(profile.role);
+        setUserRole(member.role);
         setIsLoggedIn(true);
 
         // Check if current route is allowed for user's role
         const currentPath = window.location.pathname;
-        const allowedPaths = menuItems.filter(item => item.roles.includes(profile.role)).map(item => item.to);
+        const allowedPaths = menuItems.filter(item => item.roles.includes(member.role)).map(item => item.to);
         
         if (!allowedPaths.includes(currentPath) && currentPath !== "/admin/profile") {
           console.log("Access denied to path:", currentPath);

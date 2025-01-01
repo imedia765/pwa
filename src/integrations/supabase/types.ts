@@ -36,13 +36,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "admin_notes_admin_id_fkey"
-            columns: ["admin_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "admin_notes_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -231,6 +224,7 @@ export type Database = {
           profile_completed: boolean | null
           profile_updated: boolean | null
           registration_completed: boolean | null
+          role: Database["public"]["Enums"]["user_role"]
           status: string | null
           town: string | null
           updated_at: string
@@ -260,6 +254,7 @@ export type Database = {
           profile_completed?: boolean | null
           profile_updated?: boolean | null
           registration_completed?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           town?: string | null
           updated_at?: string
@@ -289,6 +284,7 @@ export type Database = {
           profile_completed?: boolean | null
           profile_updated?: boolean | null
           registration_completed?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           town?: string | null
           updated_at?: string
@@ -360,63 +356,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      profiles: {
-        Row: {
-          address: string | null
-          created_at: string
-          date_of_birth: string | null
-          email: string | null
-          full_name: string | null
-          gender: string | null
-          id: string
-          marital_status: string | null
-          member_number: string | null
-          phone: string | null
-          postcode: string | null
-          profile_completed: boolean | null
-          role: Database["public"]["Enums"]["user_role"]
-          town: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          address?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          email?: string | null
-          full_name?: string | null
-          gender?: string | null
-          id?: string
-          marital_status?: string | null
-          member_number?: string | null
-          phone?: string | null
-          postcode?: string | null
-          profile_completed?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"]
-          town?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          address?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          email?: string | null
-          full_name?: string | null
-          gender?: string | null
-          id?: string
-          marital_status?: string | null
-          member_number?: string | null
-          phone?: string | null
-          postcode?: string | null
-          profile_completed?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"]
-          town?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
       }
       registrations: {
         Row: {
@@ -517,13 +456,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "ticket_responses_responder_id_fkey"
-            columns: ["responder_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "ticket_responses_ticket_id_fkey"
             columns: ["ticket_id"]
