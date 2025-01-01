@@ -5,12 +5,12 @@ export const updateUserRole = async (userId: string, newRole: UserRole) => {
   console.log('Attempting to update user role:', { userId, newRole });
   
   const { data, error } = await supabase
-    .from('profiles')
+    .from('members')
     .update({ 
       role: newRole,
       updated_at: new Date().toISOString()
     })
-    .eq('id', userId)
+    .eq('auth_user_id', userId)
     .select()
     .single();
 

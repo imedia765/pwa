@@ -10,26 +10,26 @@ import { supabase } from "@/integrations/supabase/client";
 export function FinanceHeader() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
-  // Get current user's role from profiles
-  const { data: userProfile } = useQuery({
-    queryKey: ['currentUserProfile'],
+  // Get current user's role from members
+  const { data: userMember } = useQuery({
+    queryKey: ['currentUserMember'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return null;
 
-      const { data: profile, error } = await supabase
-        .from('profiles')
+      const { data: member, error } = await supabase
+        .from('members')
         .select('role')
-        .eq('id', session.user.id)
+        .eq('auth_user_id', session.user.id)
         .single();
 
       if (error) throw error;
-      return profile;
+      return member;
     },
   });
 
-  const isCollector = userProfile?.role === 'collector';
-  const isAdmin = userProfile?.role === 'admin';
+  const isCollector = userMember?.role === 'collector';
+  const isAdmin = userMember?.role === 'admin';
 
   return (
     <div className="flex flex-col space-y-4">

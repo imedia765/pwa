@@ -26,8 +26,7 @@ const TABLES = [
   'family_members',
   'admin_notes',
   'members',
-  'collectors',
-  'profiles'
+  'collectors'
 ] as const;
 
 type TableName = typeof TABLES[number];
@@ -52,7 +51,7 @@ export function DeleteDatabaseSection({ onDelete }: DeleteDatabaseSectionProps) 
         const { error } = await supabase
           .from(table)
           .delete()
-          .not('id', 'is', null); // Changed to delete all non-null IDs
+          .not('id', 'is', null);
 
         if (error) {
           console.error(`Error deleting from ${table}:`, error);

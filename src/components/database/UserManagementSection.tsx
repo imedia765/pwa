@@ -4,26 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { UserSearch } from "./UserSearch";
 import { UserList } from "./UserList";
-
-interface Profile {
-  id: string;
-  email: string | null;
-  role: string | null;
-  user_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Member } from "@/types/member";
 
 export function UserManagementSection() {
   const [searchTerm, setSearchTerm] = useState("");
-
   const [updating, setUpdating] = useState<string | null>(null);
 
   const { data: users, refetch } = useQuery({
-    queryKey: ['profiles', searchTerm],
+    queryKey: ['members', searchTerm],
     queryFn: async () => {
       let query = supabase
-        .from('profiles')
+        .from('members')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -37,14 +28,14 @@ export function UserManagementSection() {
         }
       }
 
-      const { data: profiles, error } = await query;
+      const { data: members, error } = await query;
 
       if (error) {
-        console.error('Error fetching profiles:', error);
+        console.error('Error fetching members:', error);
         throw error;
       }
 
-      return profiles as Profile[];
+      return members as Member[];
     },
   });
 

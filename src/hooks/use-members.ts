@@ -28,23 +28,23 @@ export const useMembers = (page: number, searchTerm: string) => {
 
         console.log('Current user:', user.id);
 
-        // Get the user's profile to check their role
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, role')
-          .eq('id', user.id)
+        // Get the user's member record to check their role
+        const { data: member, error: memberError } = await supabase
+          .from('members')
+          .select('role')
+          .eq('auth_user_id', user.id)
           .maybeSingle();
 
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          throw profileError;
+        if (memberError) {
+          console.error('Error fetching member:', memberError);
+          throw memberError;
         }
 
-        if (!profile) {
-          throw new Error('No profile found for user');
+        if (!member) {
+          throw new Error('No member found for user');
         }
 
-        console.log('User profile:', profile);
+        console.log('User member:', member);
 
         // Initialize query
         let query = supabase
@@ -60,7 +60,7 @@ export const useMembers = (page: number, searchTerm: string) => {
           `, { count: 'exact' });
 
         // If user is a collector, filter by their collector id
-        if (profile.role === 'collector') {
+        if (member.role === 'collector') {
           console.log('User is a collector, checking collector assignment...');
           
           // Get the collector ID directly from the members table where this user is assigned
@@ -98,7 +98,7 @@ export const useMembers = (page: number, searchTerm: string) => {
 
         // Then get paginated data
         const from = page * 20;
-        const to = Math.min(from + 19, totalCount - 1); // Ensure we don't request beyond available data
+        const to = Math.min(from + 19, totalCount - 1);
         
         // Only fetch if we have data in this range
         if (from <= totalCount) {
