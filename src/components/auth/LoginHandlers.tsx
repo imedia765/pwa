@@ -17,92 +17,44 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
     console.log("Found member:", member);
 
-    // First try to sign in, regardless of whether they have an auth_user_id
-    // This handles cases where the auth account exists but wasn't properly linked
+    // Use member's email or generate a temporary one
+    const email = member.email || `${cleanMemberId}@temp.pwaburton.org`;
+
+    // Attempt to sign in with member number as password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: member.email || `${cleanMemberId}@temp.pwaburton.org`,
+      email: email,
       password: cleanMemberId
     });
 
-    // If sign in worked and we just need to link the account
-    if (signInData?.user && !member.auth_user_id) {
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({ 
-          auth_user_id: signInData.user.id,
-          email_verified: true
-        })
-        .eq('member_number', cleanMemberId)
-        .single();
-
-      if (updateError) {
-        console.error('Error linking existing auth account:', updateError);
-      }
-
-      console.log("Successfully linked existing auth account");
-      navigate("/admin");
-      return;
-    }
-
-    // If sign in failed and they don't have a linked auth account, create one
-    if (signInError && !member.auth_user_id) {
-      console.log("Creating new auth account");
-      
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: member.email || `${cleanMemberId}@temp.pwaburton.org`,
-        password: cleanMemberId,
-        options: {
-          data: {
-            member_number: cleanMemberId
-          }
-        }
-      });
-
-      if (signUpError) {
-        console.error('Error creating auth account:', signUpError);
-        throw new Error("Failed to create account. Please try again or contact support.");
-      }
-
-      if (!signUpData?.user) {
-        throw new Error("Failed to create account");
-      }
-
-      // Link the new auth account
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({ 
-          auth_user_id: signUpData.user.id,
-          email_verified: true
-        })
-        .eq('member_number', cleanMemberId)
-        .single();
-
-      if (updateError) {
-        console.error('Error linking new auth account:', updateError);
-        throw new Error("Account created but failed to update member record");
-      }
-
-      console.log("Successfully created and linked new auth account");
-      navigate("/admin");
-      return;
-    }
-
-    // If we get here and sign in failed, but they have an auth_user_id
-    // then something is wrong with their credentials
-    if (signInError && member.auth_user_id) {
-      console.error('Sign in failed for existing account:', signInError);
+    if (signInError) {
+      console.error('Sign in failed:', signInError);
       throw new Error("Invalid credentials. Please contact support if you need help accessing your account.");
     }
 
-    // If we get here and sign in worked, just navigate
     if (signInData?.user) {
+      // If sign in worked but we need to link the account
+      if (!member.auth_user_id) {
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ 
+            auth_user_id: signInData.user.id,
+            email_verified: true
+          })
+          .eq('member_number', cleanMemberId)
+          .single();
+
+        if (updateError) {
+          console.error('Error linking auth account:', updateError);
+          throw new Error("Error updating member record");
+        }
+      }
+
       console.log("Login successful");
       navigate("/admin");
       return;
     }
 
-    // If we somehow get here, something unexpected happened
-    throw new Error("Login failed. Please try again.");
+    throw new Error("Login failed. Please contact support.");
 
   } catch (error) {
     console.error('Authentication error:', error);
