@@ -14,49 +14,68 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       console.error("Member lookup failed:", { member_number: cleanMemberId });
       throw new Error("Member ID not found");
     }
-    
-    // Use the email stored in the database
-    const email = member.email;
-    
-    if (!email) {
-      throw new Error("No email associated with this member ID");
-    }
-    
-    console.log("Found member:", { member_number: member.member_number, email });
 
-    // Attempt to sign in with member credentials
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    // Check if member already has an auth account
+    if (member.auth_user_id) {
+      // If they do, try to sign in with their email
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: member.email || `${cleanMemberId}@temp.pwaburton.org`,
+        password: cleanMemberId
+      });
+
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+        throw new Error("Invalid credentials. Please contact support if you need help accessing your account.");
+      }
+
+      if (!signInData?.user) {
+        throw new Error("Login failed. Please try again.");
+      }
+
+      console.log("Login successful");
+      navigate("/admin");
+      return;
+    }
+
+    // If no auth account exists, create one
+    const email = member.email || `${cleanMemberId}@temp.pwaburton.org`;
+    console.log("Creating auth account for member:", { email });
+
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
-      password: cleanMemberId
+      password: cleanMemberId,
+      options: {
+        data: {
+          member_number: cleanMemberId
+        }
+      }
     });
 
-    if (signInError) {
-      console.error('Sign in error:', signInError);
-      throw new Error("Invalid credentials. Please contact support if you need help accessing your account.");
+    if (signUpError) {
+      console.error('Sign up error:', signUpError);
+      throw new Error("Failed to create account. Please contact support.");
     }
 
-    if (!signInData?.user) {
-      throw new Error("Login failed. Please try again.");
+    if (!signUpData?.user) {
+      throw new Error("Failed to create account");
     }
 
-    // If not already linked, update member record with auth user id
-    if (!member.auth_user_id) {
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({ 
-          auth_user_id: signInData.user.id,
-          email_verified: true
-        })
-        .eq('member_number', cleanMemberId)
-        .single();
+    // Update member record with new auth user id
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({ 
+        auth_user_id: signUpData.user.id,
+        email_verified: true
+      })
+      .eq('member_number', cleanMemberId)
+      .single();
 
-      if (updateError) {
-        console.error('Error updating member:', updateError);
-        // Continue anyway since sign in worked
-      }
+    if (updateError) {
+      console.error('Error updating member:', updateError);
+      throw new Error("Account created but failed to update member record");
     }
-    
-    console.log("Login successful");
+
+    console.log("Auth account created and linked successfully");
     navigate("/admin");
 
   } catch (error) {
