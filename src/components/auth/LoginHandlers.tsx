@@ -20,81 +20,61 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     // Use member's email or generate a temporary one
     const email = member.email || `${cleanMemberId}@temp.pwaburton.org`;
 
-    // First try to sign in with existing credentials
+    // If member has no auth_user_id, create an account first
+    if (!member.auth_user_id) {
+      console.log("No auth account found, creating new one");
+      
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: cleanMemberId,
+        options: {
+          data: {
+            member_number: cleanMemberId
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Error creating auth account:', signUpError);
+        throw new Error("Failed to create account. Please try again or contact support.");
+      }
+
+      if (!signUpData.user) {
+        throw new Error("Failed to create auth account");
+      }
+
+      // Link the auth account to the member record
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ 
+          auth_user_id: signUpData.user.id,
+          email_verified: true
+        })
+        .eq('member_number', cleanMemberId);
+
+      if (updateError) {
+        console.error('Error linking auth account:', updateError);
+        throw new Error("Account created but failed to update member record");
+      }
+    }
+
+    // Now try to sign in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email,
-      password: cleanMemberId // Use member ID as password
+      password: cleanMemberId
     });
 
     if (signInError) {
-      console.error('Initial sign in attempt failed:', signInError);
-      
-      // If no auth account exists, create one
-      if (!member.auth_user_id) {
-        console.log("No auth account found, creating new one");
-        
-        // First, sign up the user
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: email,
-          password: cleanMemberId,
-          options: {
-            data: {
-              member_number: cleanMemberId
-            }
-          }
-        });
-
-        if (signUpError) {
-          console.error('Error creating auth account:', signUpError);
-          throw new Error("Failed to create account. Please try again or contact support.");
-        }
-
-        if (!signUpData.user) {
-          throw new Error("Failed to create auth account");
-        }
-
-        // Link the auth account to the member record
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ 
-            auth_user_id: signUpData.user.id,
-            email_verified: true
-          })
-          .eq('member_number', cleanMemberId);
-
-        if (updateError) {
-          console.error('Error linking auth account:', updateError);
-          throw new Error("Account created but failed to update member record");
-        }
-
-        // Now try to sign in with the new account
-        const { data: newSignInData, error: newSignInError } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: cleanMemberId
-        });
-
-        if (newSignInError) {
-          console.error('Error signing in with new account:', newSignInError);
-          throw new Error("Account created but unable to sign in. Please try again.");
-        }
-
-        console.log("Successfully created account and signed in");
-        navigate("/admin");
-        return;
-      }
-
-      // If we have an auth_user_id but sign-in failed, credentials are wrong
-      throw new Error("Invalid credentials. Please contact support if you need help accessing your account.");
+      console.error('Sign in attempt failed:', signInError);
+      throw new Error("Invalid credentials. Please try again or contact support.");
     }
 
-    // Successful sign in with existing account
-    if (signInData?.user) {
-      console.log("Login successful with existing account");
-      navigate("/admin");
-      return;
+    if (!signInData.user) {
+      throw new Error("Login failed. Please contact support.");
     }
 
-    throw new Error("Login failed. Please contact support.");
+    console.log("Login successful");
+    navigate("/admin");
 
   } catch (error) {
     console.error('Authentication error:', error);
