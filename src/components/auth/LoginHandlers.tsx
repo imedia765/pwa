@@ -4,11 +4,14 @@ import { getMemberByMemberId } from "@/utils/memberAuth";
 
 export async function handleMemberIdLogin(memberId: string, password: string, navigate: ReturnType<typeof useNavigate>) {
   try {
+    const cleanMemberId = memberId.toUpperCase().trim();
+    console.log("Attempting login with member_number:", cleanMemberId);
+    
     // First, look up the member
-    const member = await getMemberByMemberId(memberId);
+    const member = await getMemberByMemberId(cleanMemberId);
     
     if (!member) {
-      console.error("Member lookup failed:", { memberId });
+      console.error("Member lookup failed:", { member_number: cleanMemberId });
       throw new Error("Member ID not found");
     }
     
@@ -19,7 +22,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       throw new Error("No email associated with this member ID");
     }
     
-    console.log("Attempting member ID login with:", { memberId, email });
+    console.log("Found member:", { member_number: member.member_number, email });
 
     // First check if user exists in auth system
     const { data: { user: existingUser }, error: userCheckError } = await supabase.auth.getUser();
@@ -43,7 +46,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       throw new Error("A password reset link has been sent to your email.");
     }
 
-    // Try to sign in with member ID as password
+    // Try to sign in with member number as password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password: member.member_number // Use member_number as initial password
@@ -60,7 +63,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
             auth_user_id: signInData.user.id,
             email_verified: true
           })
-          .eq('id', member.id)
+          .eq('member_number', member.member_number)
           .single();
 
         if (updateError) {
@@ -81,7 +84,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       password: member.member_number, // Use member_number as initial password
       options: {
         data: {
-          member_id: member.id,
+          member_number: member.member_number,
           full_name: member.full_name
         }
       }
@@ -106,7 +109,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
         auth_user_id: signUpData.user.id,
         email_verified: true
       })
-      .eq('id', member.id)
+      .eq('member_number', member.member_number)
       .single();
 
     if (updateError) {

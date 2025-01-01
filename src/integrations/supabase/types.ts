@@ -470,14 +470,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_profile: {
-        Args: {
-          p_id: string
-          p_email: string
-          p_user_id: string
-        }
-        Returns: undefined
-      }
       delete_collector: {
         Args: {
           collector_id: string
