@@ -23,20 +23,20 @@ export function NoticesSection() {
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
-  // Get the current user's profile
-  const { data: profile } = useQuery({
-    queryKey: ['profile'],
+  // Get the current user's member data
+  const { data: currentMember } = useQuery({
+    queryKey: ['currentMember'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      const { data: profile } = await supabase
-        .from('profiles')
+      const { data: member } = await supabase
+        .from('members')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('auth_user_id', user.id)
         .single();
       
-      return profile;
+      return member;
     },
   });
 
@@ -59,7 +59,7 @@ export function NoticesSection() {
       return;
     }
 
-    if (!profile) {
+    if (!currentMember) {
       toast({
         title: "Error",
         description: "You must be logged in to send notices",
@@ -127,7 +127,7 @@ export function NoticesSection() {
           <Button 
             onClick={handleSendNotice}
             className="w-full sm:w-auto"
-            disabled={isSending || !profile}
+            disabled={isSending || !currentMember}
           >
             <Send className="mr-2 h-4 w-4" />
             {isSending ? "Sending..." : "Send Notice"}

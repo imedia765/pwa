@@ -81,31 +81,6 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
         await dependantsRef.current.saveDependants();
       }
 
-      // Update profiles table using auth_user_id instead of member_number
-      if (memberData.auth_user_id) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: formData.full_name,
-            address: formData.address,
-            town: formData.town,
-            postcode: formData.postcode,
-            email: formData.email,
-            phone: formData.phone,
-            date_of_birth: formData.date_of_birth || null,
-            marital_status: formData.marital_status,
-            gender: formData.gender,
-            profile_completed: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', memberData.auth_user_id);
-
-        if (profileError) {
-          console.error("Error updating profile:", profileError);
-          throw profileError;
-        }
-      }
-
       toast({
         title: "Success",
         description: "Profile updated successfully",

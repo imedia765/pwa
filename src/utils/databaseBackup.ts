@@ -9,8 +9,7 @@ const TABLES = [
   'family_members',
   'admin_notes',
   'members',
-  'collectors',
-  'profiles'
+  'collectors'
 ] as const;
 
 type TableName = typeof TABLES[number];
