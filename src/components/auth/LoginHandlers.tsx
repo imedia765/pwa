@@ -24,41 +24,27 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     console.log("Found member:", { member_number: member.member_number, email });
 
-    // First try to sign in
+    // Attempt to sign in with member credentials
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: cleanMemberId // Use member_number as password
+      password: cleanMemberId
     });
 
-    // If sign in fails, create the auth user
     if (signInError) {
-      console.log("Sign in failed, creating auth user");
-      
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: cleanMemberId,
-        options: {
-          data: {
-            member_number: cleanMemberId,
-            full_name: member.full_name
-          }
-        }
-      });
+      console.error('Sign in error:', signInError);
+      throw new Error("Invalid credentials. Please contact support if you need help accessing your account.");
+    }
 
-      if (signUpError) {
-        console.error('Sign up error:', signUpError);
-        throw new Error("Failed to create account. Please contact support.");
-      }
+    if (!signInData?.user) {
+      throw new Error("Login failed. Please try again.");
+    }
 
-      if (!signUpData?.user) {
-        throw new Error("Failed to create account");
-      }
-
-      // Update member record with new auth user id
+    // If not already linked, update member record with auth user id
+    if (!member.auth_user_id) {
       const { error: updateError } = await supabase
         .from('members')
         .update({ 
-          auth_user_id: signUpData.user.id,
+          auth_user_id: signInData.user.id,
           email_verified: true
         })
         .eq('member_number', cleanMemberId)
@@ -66,39 +52,12 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
       if (updateError) {
         console.error('Error updating member:', updateError);
-        throw new Error("Account created but failed to update member record");
+        // Continue anyway since sign in worked
       }
-
-      console.log("Auth user created successfully");
-      navigate("/admin");
-      return;
     }
-
-    // If sign in succeeded
-    if (signInData?.user) {
-      // If not already linked, update member record with auth user id
-      if (!member.auth_user_id) {
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ 
-            auth_user_id: signInData.user.id,
-            email_verified: true
-          })
-          .eq('member_number', cleanMemberId)
-          .single();
-
-        if (updateError) {
-          console.error('Error updating member:', updateError);
-          // Continue anyway since sign in worked
-        }
-      }
-      
-      console.log("Login successful");
-      navigate("/admin");
-      return;
-    }
-
-    throw new Error("Login failed. Please try again.");
+    
+    console.log("Login successful");
+    navigate("/admin");
 
   } catch (error) {
     console.error('Authentication error:', error);
