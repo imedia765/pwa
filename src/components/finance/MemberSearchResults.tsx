@@ -1,32 +1,43 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { MemberSearchResult } from "./types";
+import { Button } from "@/components/ui/button";
+import type { MemberSearchResult } from "./types";
 
 interface MemberSearchResultsProps {
-  members: MemberSearchResult[] | null;
+  members: MemberSearchResult[];
   onSelect: (member: MemberSearchResult) => void;
+  collectorId?: string | null;
 }
 
-export function MemberSearchResults({ members, onSelect }: MemberSearchResultsProps) {
-  if (!members || members.length === 0) return null;
+export function MemberSearchResults({ members, onSelect, collectorId }: MemberSearchResultsProps) {
+  // Filter members to only show those assigned to the collector
+  const filteredMembers = collectorId 
+    ? members.filter(member => member.collector_id === collectorId)
+    : members;
+
+  if (filteredMembers.length === 0) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        No members found
+      </div>
+    );
+  }
 
   return (
-    <ScrollArea className="h-[200px] rounded-md border">
-      <div className="p-4 space-y-2">
-        {members.map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
-            onClick={() => onSelect(member)}
-          >
-            <div>
-              <p className="font-medium">{member.full_name}</p>
-              <p className="text-sm text-muted-foreground">
-                {member.member_number} • {member.email}
-              </p>
+    <div className="space-y-2">
+      {filteredMembers.map((member) => (
+        <Button
+          key={member.id}
+          variant="outline"
+          className="w-full justify-start text-left"
+          onClick={() => onSelect(member)}
+        >
+          <div>
+            <div className="font-medium">{member.full_name}</div>
+            <div className="text-sm text-muted-foreground">
+              {member.member_number}
             </div>
           </div>
-        ))}
-      </div>
-    </ScrollArea>
+        </Button>
+      ))}
+    </div>
   );
 }

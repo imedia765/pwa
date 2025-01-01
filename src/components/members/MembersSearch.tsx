@@ -11,7 +11,7 @@ export function MembersSearch({ searchTerm, setSearchTerm, isLoading }: MembersS
   return (
     <div className="relative">
       <Input
-        placeholder="Search members by name or member number..."
+        placeholder="Search by member number..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="max-w-sm"

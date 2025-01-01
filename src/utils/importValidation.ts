@@ -1,16 +1,11 @@
 export interface ImportData {
   collector: string;
-  fullName?: string;
   name?: string;
   address?: string;
-  email?: string;
-  gender?: string;
-  maritalStatus?: string;
-  mobileNo?: string;
-  dateOfBirth?: string;
-  postCode?: string;
-  town?: string;
-  verified?: boolean;
+  "Member No"?: string;
+  "Name"?: string;
+  "Address"?: string;
+  "Collector"?: string;
 }
 
 export const validateJsonData = (data: any[]): ImportData[] => {
@@ -24,7 +19,11 @@ export const validateJsonData = (data: any[]): ImportData[] => {
       return false;
     }
     
-    if (!item.collector || (!item.fullName && !item.name)) {
+    // Check for required fields in both old and new format
+    const hasCollector = item.collector || item.Collector;
+    const hasName = item.name || item.Name || item.fullName;
+    
+    if (!hasCollector || !hasName) {
       console.log('Skipping item missing required fields:', item);
       return false;
     }

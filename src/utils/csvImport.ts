@@ -10,11 +10,11 @@ export async function importMembersFromCsv(file: string) {
         header: true,
         skipEmptyLines: true,
         transformHeader: (header) => {
-          // Clean up header names
+          // Clean up header names and handle the new format
           return header
-            .replace(/^Unknown Author.*Author:\s*/, '') // Remove prefix
-            .replace(/\n/g, ' ') // Replace newlines with spaces
-            .trim(); // Remove extra whitespace
+            .trim()
+            .replace(/^"/, '')
+            .replace(/"$/, '');
         },
         complete: (results) => {
           console.log('Parsed CSV data:', results.data);

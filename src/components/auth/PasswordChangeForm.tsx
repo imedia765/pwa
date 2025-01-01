@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export const PasswordChangeForm = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,62 +27,37 @@ export const PasswordChangeForm = () => {
     }
 
     try {
-      // First get the current session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error("Session error:", sessionError);
-        throw new Error("Please log in again to change your password");
-      }
-
-      if (!session) {
-        throw new Error("No active session found. Please log in again.");
-      }
-
-      // Update the password
-      const { data: userData, error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
       });
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
-      // Update the member record
-      const { data: memberData, error: memberError } = await supabase
-        .from('members')
-        .select('id')
-        .eq('email', session.user.email)
-        .maybeSingle();
-
-      if (memberError) throw memberError;
-
-      if (memberData) {
-        const { error: updateMemberError } = await supabase
+      // Update the password_changed flag in members table
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        const { error: updateError } = await supabase
           .from('members')
           .update({ 
-            auth_user_id: session.user.id,
             password_changed: true,
-            first_time_login: false,
-            phone: phoneNumber,
-            profile_updated: true,
-            email_verified: true
+            profile_updated: true 
           })
-          .eq('id', memberData.id);
+          .eq('auth_user_id', user.id);
 
-        if (updateMemberError) throw updateMemberError;
+        if (updateError) throw updateError;
       }
 
       toast({
-        title: "Profile updated",
-        description: "Your password and contact details have been updated successfully",
+        title: "Password updated",
+        description: "Your password has been changed successfully",
       });
       
-      // Redirect to admin/profile after password change
-      navigate("/admin/profile");
+      navigate("/admin");
     } catch (error) {
-      console.error("Profile update error:", error);
+      console.error("Password change error:", error);
       toast({
-        title: "Update failed",
-        description: error instanceof Error ? error.message : "Failed to update profile",
+        title: "Password change failed",
+        description: error instanceof Error ? error.message : "Failed to update password",
         variant: "destructive",
       });
     } finally {
@@ -115,17 +89,8 @@ export const PasswordChangeForm = () => {
           disabled={isLoading}
         />
       </div>
-      <div className="space-y-2">
-        <Input
-          type="tel"
-          placeholder="Contact Number"
-          value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-          disabled={isLoading}
-        />
-      </div>
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Updating Profile..." : "Update Profile"}
+        {isLoading ? "Changing Password..." : "Change Password"}
       </Button>
     </form>
   );

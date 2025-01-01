@@ -1,89 +1,124 @@
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { getMemberByMemberId } from "@/utils/memberAuth";
 
-export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
+export async function handleMemberIdLogin(memberId: string, password: string, navigate: ReturnType<typeof useNavigate>) {
+  try {
+    // First, look up the member
+    const member = await getMemberByMemberId(memberId);
+    
+    if (!member) {
+      console.error("Member lookup failed:", { memberId });
+      throw new Error("Member ID not found");
+    }
+    
+    // Use the email stored in the database
+    const email = member.email;
+    
+    if (!email) {
+      throw new Error("No email associated with this member ID");
+    }
+    
+    console.log("Attempting member ID login with:", { memberId, email });
 
-  const handleMemberIdSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const memberId = (formData.get("memberId") as string).toUpperCase().trim();
-    const password = formData.get("memberPassword") as string;
+    // First check if user exists in auth system
+    const { data: { user: existingUser }, error: userCheckError } = await supabase.auth.getUser();
+    
+    if (userCheckError) {
+      console.error("Error checking user:", userCheckError);
+    }
 
-    try {
-      // First, get the member details
-      const { data: member, error: memberError } = await supabase
-        .from('members')
-        .select('id, email, default_password_hash, password_changed, auth_user_id')
-        .eq('member_number', memberId)
-        .maybeSingle();
-
-      if (memberError) {
-        console.error('Member lookup error:', memberError);
-        throw new Error("Error checking member status");
-      }
-
-      if (!member) {
-        throw new Error("Invalid Member ID. Please check your credentials and try again.");
-      }
-
-      // Attempt to sign in with the temp email
-      const tempEmail = `${memberId.toLowerCase()}@temp.pwaburton.org`;
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: tempEmail,
-        password: password,
+    // If user exists and is linked to this member, try password reset
+    if (existingUser && member.auth_user_id === existingUser.id) {
+      console.log("User exists and is linked, initiating password reset");
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`
       });
-
-      if (signInError) {
-        console.error('Sign in error:', signInError);
-        if (signInError.message.includes('Invalid login credentials')) {
-          throw new Error("Invalid Member ID or password. Please try again.");
-        }
-        throw signInError;
+      
+      if (resetError) {
+        console.error('Password reset error:', resetError);
+        throw new Error("Unable to reset password. Please contact support.");
       }
+      
+      throw new Error("A password reset link has been sent to your email.");
+    }
 
-      // Update auth_user_id if not set
-      if (!member.auth_user_id && data.user) {
+    // Try to sign in with member ID as password
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: member.member_number // Use member_number as initial password
+    });
+
+    if (!signInError && signInData?.user) {
+      console.log("Sign in successful");
+      
+      // Update member record if not already linked
+      if (!member.auth_user_id) {
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
-            auth_user_id: data.user.id,
-            email_verified: true,
-            profile_updated: true
+            auth_user_id: signInData.user.id,
+            email_verified: true
           })
-          .eq('id', member.id);
+          .eq('id', member.id)
+          .single();
 
         if (updateError) {
-          console.error('Error updating auth_user_id:', updateError);
+          console.error('Error updating member:', updateError);
+          // Continue anyway since sign in worked
         }
       }
-
-      // Check if password needs to be changed
-      if (!member.password_changed) {
-        navigate("/change-password");
-        return;
-      }
-
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
       
-      setIsLoggedIn(true);
-      navigate("/admin/profile");
-    } catch (error) {
-      console.error("Member ID login error:", error);
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid Member ID or password",
-        variant: "destructive",
-      });
+      navigate("/admin");
+      return;
     }
-  };
 
-  return {
-    handleMemberIdSubmit,
-  };
-};
+    console.log("Sign in failed, attempting signup");
+
+    // Try to create new user
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password: member.member_number, // Use member_number as initial password
+      options: {
+        data: {
+          member_id: member.id,
+          full_name: member.full_name
+        }
+      }
+    });
+
+    if (signUpError) {
+      console.error('Sign up error:', signUpError);
+      if (signUpError.message.includes("Database error saving new user")) {
+        throw new Error("Unable to create account. The email may already be in use. Please contact support.");
+      }
+      throw new Error(signUpError.message);
+    }
+
+    if (!signUpData?.user) {
+      throw new Error("Failed to create account");
+    }
+
+    // Update member record with auth user id
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({ 
+        auth_user_id: signUpData.user.id,
+        email_verified: true
+      })
+      .eq('id', member.id)
+      .single();
+
+    if (updateError) {
+      console.error('Error updating member:', updateError);
+      throw new Error("Account created but failed to update member record. Please contact support.");
+    }
+
+    console.log("Account created successfully");
+    navigate("/admin");
+
+  } catch (error) {
+    console.error('Authentication error:', error);
+    throw error;
+  }
+}

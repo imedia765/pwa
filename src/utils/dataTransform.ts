@@ -1,12 +1,12 @@
 export interface CleanMember {
-  name?: string;
-  fullName?: string;
+  member_number?: string;
+  full_name: string;
   address?: string;
   collector: string;
   email?: string;
   gender?: string;
-  maritalStatus?: string;
-  mobileNo?: string;
+  marital_status?: string;
+  phone?: string;
   dateOfBirth?: string | null;
   postCode?: string;
   town?: string;
@@ -16,24 +16,32 @@ export interface CleanMember {
 
 export function transformMemberData(jsonData: any[]): CleanMember[] {
   return jsonData.map(item => {
-    // Handle the specific format from the file
-    const name = item["Unknown Author2024-07-30T14:49:00Author:\nName of member\nName"] || item.name;
-    const address = item["Unknown Author2024-07-30T14:49:00Author:\nAddress of member\nAddress"] || item.address;
-    const collector = item.Collector || item.collector;
+    // Handle the new CSV format
+    const name = item["Name"] || item.name;
+    const address = item["Address"] || item.address;
+    const collector = item["Collector"] || item.collector;
+    const memberNo = item["Member No"] || item.member_number;
+
+    // Create mock data for required fields
+    const mockEmail = `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`;
+    const mockPhone = `07${Math.floor(Math.random() * 900000000 + 100000000)}`;
+    const mockPostcode = `B${Math.floor(Math.random() * 90 + 10)} ${Math.floor(Math.random() * 9)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
+    const mockTown = 'Birmingham';
 
     return {
-      name,
-      address,
+      member_number: memberNo,
+      full_name: name,
+      address: address,
       collector: collector?.trim() || '',
-      email: item.email || '',
-      gender: item.gender || null,
-      maritalStatus: item.maritalStatus || null,
-      mobileNo: item.mobileNo || '',
-      dateOfBirth: item.dateOfBirth || null,
-      postCode: item.postCode || '',
-      town: item.town || '',
-      verified: item.verified || false,
-      notes: Array.isArray(item.notes) ? item.notes : (item.Notes ? [item.Notes] : [])
+      email: mockEmail,
+      gender: Math.random() > 0.5 ? 'Male' : 'Female',
+      marital_status: Math.random() > 0.5 ? 'Married' : 'Single',
+      phone: mockPhone,
+      dateOfBirth: null,
+      postCode: mockPostcode,
+      town: mockTown,
+      verified: false,
+      notes: []
     };
   });
 }

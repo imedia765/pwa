@@ -4,9 +4,32 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { AddPaymentDialog } from "./AddPaymentDialog";
 import { AddExpenseDialog } from "./AddExpenseDialog";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export function FinanceHeader() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+
+  // Get current user's role from profiles
+  const { data: userProfile } = useQuery({
+    queryKey: ['currentUserProfile'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      return profile;
+    },
+  });
+
+  const isCollector = userProfile?.role === 'collector';
+  const isAdmin = userProfile?.role === 'admin';
 
   return (
     <div className="flex flex-col space-y-4">
@@ -14,32 +37,35 @@ export function FinanceHeader() {
         Financial Overview
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Payment
-            </Button>
-          </DialogTrigger>
-          <AddPaymentDialog 
-            isOpen={isPaymentDialogOpen} 
-            onClose={() => setIsPaymentDialogOpen(false)}
-            onPaymentAdded={() => {
-              // Refresh data or perform any necessary updates
-              setIsPaymentDialogOpen(false);
-            }}
-          />
-        </Dialog>
+        {(isAdmin || isCollector) && (
+          <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Payment
+              </Button>
+            </DialogTrigger>
+            <AddPaymentDialog 
+              isOpen={isPaymentDialogOpen} 
+              onClose={() => setIsPaymentDialogOpen(false)}
+              onPaymentAdded={() => {
+                setIsPaymentDialogOpen(false);
+              }}
+            />
+          </Dialog>
+        )}
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Expense
-            </Button>
-          </DialogTrigger>
-          <AddExpenseDialog />
-        </Dialog>
+        {isAdmin && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Expense
+              </Button>
+            </DialogTrigger>
+            <AddExpenseDialog />
+          </Dialog>
+        )}
       </div>
     </div>
   );

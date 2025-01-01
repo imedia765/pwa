@@ -1,6 +1,8 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { CollectorDialog } from "./CollectorDialog";
+import { UserCard } from "./UserCard";
+import { updateUserRole, createCollectorProfile } from "@/utils/roleManagement";
 
 interface UserListProps {
   users: any[];
@@ -11,68 +13,74 @@ interface UserListProps {
 
 export function UserList({ users, onUpdate, updating, setUpdating }: UserListProps) {
   const { toast } = useToast();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showCollectorDialog, setShowCollectorDialog] = useState(false);
 
-  const updateUserRole = async (userId: string, newRole: "member" | "collector" | "admin") => {
-    setUpdating(userId);
+  const handleCollectorCreation = async (isNew: boolean, collectorName: string, collectorId: string) => {
+    if (!selectedUserId) return;
+
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          role: newRole,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      setUpdating(selectedUserId);
+      
+      // First update the user's role to collector
+      await updateUserRole(selectedUserId, 'collector');
 
-      if (error) throw error;
+      // If creating a new collector profile
+      if (isNew && collectorName) {
+        const userEmail = users.find(u => u.id === selectedUserId)?.email;
+        if (!userEmail) throw new Error('User email not found');
+        
+        await createCollectorProfile(selectedUserId, userEmail);
+      }
 
       toast({
-        title: "Role updated",
-        description: "User role has been successfully updated.",
+        title: "Success",
+        description: isNew 
+          ? "New collector created and role updated" 
+          : "User role updated to collector",
+        duration: 3000,
       });
+      
       onUpdate();
     } catch (error) {
-      console.error('Error updating role:', error);
+      console.error('Error creating collector:', error);
       toast({
         title: "Error",
-        description: "Failed to update user role. You might not have permission.",
+        description: "Failed to create collector",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setUpdating(null);
+      setSelectedUserId(null);
+      setShowCollectorDialog(false);
     }
+  };
+
+  const handleMakeCollector = (userId: string) => {
+    setSelectedUserId(userId);
+    setShowCollectorDialog(true);
   };
 
   return (
     <div className="space-y-4">
       {users.map((user) => (
-        <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="space-y-1">
-            <p className="font-medium">{user.email}</p>
-            <p className="text-sm text-muted-foreground">
-              Last login: {user.last_sign_in_at 
-                ? new Date(user.last_sign_in_at).toLocaleString() 
-                : 'Never logged in'}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Created: {new Date(user.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          <Select
-            value={user.role || 'member'}
-            onValueChange={(value: "member" | "collector" | "admin") => updateUserRole(user.id, value)}
-            disabled={updating === user.id}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="member">Member</SelectItem>
-              <SelectItem value="collector">Collector</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <UserCard
+          key={user.id}
+          user={user}
+          updating={updating}
+          setUpdating={setUpdating}
+          onUpdate={onUpdate}
+          onMakeCollector={handleMakeCollector}
+        />
       ))}
+
+      <CollectorDialog
+        isOpen={showCollectorDialog}
+        onClose={() => setShowCollectorDialog(false)}
+        onConfirm={handleCollectorCreation}
+        isLoading={!!updating}
+      />
     </div>
   );
 }

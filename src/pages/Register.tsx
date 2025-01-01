@@ -13,36 +13,26 @@ import { InfoIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 
-const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY = 1000; // 1 second
-
 export default function Register() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [selectedCollectorId, setSelectedCollectorId] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  const createMemberWithRetry = async (data: any, retryCount = 0): Promise<any> => {
+  const onSubmit = async (data: any) => {
     try {
-      console.log(`Attempting to create member (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-      
-      // First check if email already exists
-      if (data.email) {
-        const { data: existingMember } = await supabase
-          .from('members')
-          .select('id')
-          .eq('email', data.email)
-          .single();
-
-        if (existingMember) {
-          throw new Error('A member with this email already exists');
-        }
+      if (!selectedCollectorId) {
+        toast({
+          title: "Registration failed",
+          description: "Please select a collector",
+          variant: "destructive",
+        });
+        return;
       }
 
-      // Attempt to create the member
+      console.log("Starting registration process with data:", { ...data, collectorId: selectedCollectorId });
+
+      // First, create the member record
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .insert({
@@ -63,47 +53,10 @@ export default function Register() {
         .single();
 
       if (memberError) {
-        // Check if it's a duplicate member number error
-        if (memberError.message?.includes('duplicate key value violates unique constraint') ||
-            memberError.message?.includes('Could not generate unique member number')) {
-          if (retryCount < MAX_RETRIES) {
-            // Calculate exponential backoff with jitter
-            const backoffDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount) * (0.5 + Math.random());
-            console.log(`Retrying after ${backoffDelay}ms delay...`);
-            await delay(backoffDelay);
-            return createMemberWithRetry(data, retryCount + 1);
-          }
-        }
-        throw memberError;
+        console.error("Member creation error:", memberError);
+        throw new Error(memberError.message);
       }
 
-      return memberData;
-    } catch (error) {
-      if (retryCount < MAX_RETRIES) {
-        const backoffDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount) * (0.5 + Math.random());
-        console.log(`Error occurred, retrying after ${backoffDelay}ms delay...`, error);
-        await delay(backoffDelay);
-        return createMemberWithRetry(data, retryCount + 1);
-      }
-      throw error;
-    }
-  };
-
-  const onSubmit = async (data: any) => {
-    if (!selectedCollectorId) {
-      toast({
-        title: "Registration failed",
-        description: "Please select a collector",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      console.log("Starting registration process with data:", { ...data, collectorId: selectedCollectorId });
-
-      const memberData = await createMemberWithRetry(data);
       console.log("Member created:", memberData);
 
       // Create registration record
@@ -116,7 +69,7 @@ export default function Register() {
 
       if (registrationError) {
         console.error("Registration creation error:", registrationError);
-        throw registrationError;
+        throw new Error(registrationError.message);
       }
 
       toast({
@@ -130,11 +83,9 @@ export default function Register() {
       console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : "An error occurred during registration. Please try again.",
+        description: error instanceof Error ? error.message : "An error occurred during registration",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -166,12 +117,8 @@ export default function Register() {
             </div>
             
             <div className="mt-8 pt-6 border-t">
-              <Button 
-                type="submit" 
-                className="w-full bg-primary hover:bg-primary/90"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Submitting..." : "Submit Registration"}
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+                Submit Registration
               </Button>
             </div>
           </form>

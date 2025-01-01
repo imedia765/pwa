@@ -8,9 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DialogClose } from "@radix-ui/react-dialog";
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Info } from "lucide-react";
+import { useState } from "react";
 
 interface ExpenseFormData {
   category: string;
@@ -20,19 +18,8 @@ interface ExpenseFormData {
 
 export function AddExpenseDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-    getUser();
-  }, []);
-
   const form = useForm<ExpenseFormData>({
     defaultValues: {
       category: "",
@@ -42,11 +29,6 @@ export function AddExpenseDialog() {
   });
 
   const handleAddExpense = async (data: ExpenseFormData) => {
-    if (!userId) {
-      toast.error("User not authenticated");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       
@@ -56,8 +38,7 @@ export function AddExpenseDialog() {
           amount: -Number(data.amount), // Negative amount for expenses
           payment_type: data.category,
           notes: data.description,
-          payment_date: new Date().toISOString(),
-          created_by: userId // Adding the user reference
+          payment_date: new Date().toISOString()
         });
 
       if (error) throw error;
@@ -78,21 +59,6 @@ export function AddExpenseDialog() {
       <DialogHeader>
         <DialogTitle>Add New Expense</DialogTitle>
       </DialogHeader>
-
-      <Card className="bg-muted/50 mb-4">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-2">
-            <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">
-                This form is for recording general organizational expenses. 
-                Member-specific payments should be recorded using the "Add Payment" form.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleAddExpense)} className="space-y-4">
           <FormField

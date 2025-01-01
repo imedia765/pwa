@@ -43,25 +43,12 @@ export function CollectorActions({ collector, collectors, onEdit, onUpdate }: Co
 
     setIsLoading(true);
     try {
-      // First move all members to unassigned
-      const { error: membersError } = await supabase
-        .from('members')
-        .update({ 
-          collector_id: null,
-          collector: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('collector_id', collector.id);
+      // Call the delete_collector function using a direct RPC call
+      const { error } = await supabase.functions.invoke('delete-collector', {
+        body: { collector_id: collector.id }
+      });
 
-      if (membersError) throw membersError;
-
-      // Then delete the collector
-      const { error: deleteError } = await supabase
-        .from('collectors')
-        .delete()
-        .eq('id', collector.id);
-
-      if (deleteError) throw deleteError;
+      if (error) throw error;
 
       toast({
         title: "Collector deleted",
@@ -72,7 +59,7 @@ export function CollectorActions({ collector, collectors, onEdit, onUpdate }: Co
       console.error('Error deleting collector:', error);
       toast({
         title: "Error",
-        description: "Failed to delete collector",
+        description: "Failed to delete collector. Make sure to reassign or remove all members first.",
         variant: "destructive",
       });
     } finally {

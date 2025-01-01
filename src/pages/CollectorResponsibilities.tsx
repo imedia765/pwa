@@ -8,7 +8,7 @@ const CollectorResponsibilities = () => {
     <div className="container py-8 space-y-8 max-w-4xl mx-auto">
       <div className="flex items-center">
         <Link to="/">
-          <Button variant="ghost" className="flex items-center gap-2">
+          <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-4 w-4" />
             Back to Home
           </Button>
@@ -19,9 +19,9 @@ const CollectorResponsibilities = () => {
         PWA Collector Member Responsibilities
       </h1>
 
-      <Card className="animate-fade-in">
+      <Card className="animate-fade-in hover:shadow-lg transition-shadow duration-300">
         <CardHeader>
-          <CardTitle className="text-xl text-primary">Overview</CardTitle>
+          <CardTitle className="text-xl bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Overview</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-muted-foreground">
           <p>
@@ -32,9 +32,9 @@ const CollectorResponsibilities = () => {
         </CardContent>
       </Card>
 
-      <Card className="animate-fade-in">
+      <Card className="animate-fade-in hover:shadow-lg transition-shadow duration-300">
         <CardHeader>
-          <CardTitle className="text-xl text-primary">
+          <CardTitle className="text-xl bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
             Collector Responsibilities
           </CardTitle>
         </CardHeader>

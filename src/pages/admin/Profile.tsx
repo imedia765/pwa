@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AccountSettingsSection } from "@/components/profile/AccountSettingsSection";
-import { DocumentsSection } from "@/components/profile/DocumentsSection";
 import { PaymentHistorySection } from "@/components/profile/PaymentHistorySection";
 import { SupportSection } from "@/components/profile/SupportSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,9 +13,8 @@ export default function Profile() {
   const [searchAmount, setSearchAmount] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [memberNumber, setMemberNumber] = useState<string | null>(null);
 
-  // Check authentication and get user email
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -24,8 +22,28 @@ export default function Profile() {
         navigate("/login");
         return;
       }
-      console.log("Current session:", session);
-      setUserEmail(session.user.email);
+
+      // Get member number from the members table using auth user id
+      const { data: memberData, error } = await supabase
+        .from('members')
+        .select('member_number')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching member:', error);
+        toast({
+          title: "Error",
+          description: "Could not fetch member data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (memberData?.member_number) {
+        console.log('Found member number:', memberData.member_number);
+        setMemberNumber(memberData.member_number);
+      }
     };
 
     checkAuth();
@@ -34,86 +52,64 @@ export default function Profile() {
       if (!session) {
         navigate("/login");
       } else {
-        console.log("Auth state changed:", event, session);
-        setUserEmail(session.user.email);
+        // Update member number when auth state changes
+        const fetchMemberNumber = async () => {
+          const { data: memberData, error } = await supabase
+            .from('members')
+            .select('member_number')
+            .eq('auth_user_id', session.user.id)
+            .maybeSingle();
+
+          if (!error && memberData?.member_number) {
+            setMemberNumber(memberData.member_number);
+          }
+        };
+        fetchMemberNumber();
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
-  // Fetch member profile data
+  // Fetch member profile data using member number
   const { data: memberData, isLoading: memberLoading } = useQuery({
-    queryKey: ['member-profile', userEmail],
-    enabled: !!userEmail,
+    queryKey: ['member-profile', memberNumber],
+    enabled: !!memberNumber,
     queryFn: async () => {
-      console.log('Fetching profile for email:', userEmail);
+      console.log('Fetching profile for member number:', memberNumber);
       
-      try {
-        const { data, error } = await supabase
-          .from('members')
-          .select(`
-            *,
-            family_members (
-              id,
-              name,
-              relationship,
-              date_of_birth,
-              gender
-            )
-          `)
-          .eq('email', userEmail)
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from('members')
+        .select('*, family_members(*)')
+        .eq('member_number', memberNumber)
+        .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
-          toast({
-            title: "Error fetching profile",
-            description: error.message,
-            variant: "destructive",
-          });
-          return null;
-        }
-
-        if (!data) {
-          console.log('No profile found for email:', userEmail);
-          toast({
-            title: "Profile not found",
-            description: "No member profile found for this email address.",
-            variant: "destructive",
-          });
-          return null;
-        }
-
-        console.log('Found profile:', data);
-        return data;
-      } catch (error) {
-        console.error('Error in profile fetch:', error);
+      if (error) {
+        console.error('Error fetching profile:', error);
         toast({
-          title: "Error",
-          description: "An unexpected error occurred while fetching your profile.",
+          title: "Error fetching profile",
+          description: error.message,
           variant: "destructive",
         });
         return null;
       }
+
+      if (!data) {
+        console.log('No profile found for member number:', memberNumber);
+        toast({
+          title: "Profile not found",
+          description: "No member profile found for this member number.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      console.log('Found profile:', data);
+      return data;
     },
   });
-
-  // Mock document types (this could be moved to a constants file)
-  const documentTypes = [
-    { type: 'Identification', description: 'Valid ID document (Passport, Driving License)' },
-    { type: 'Address Proof', description: 'Recent utility bill or bank statement' },
-    { type: 'Medical Certificate', description: 'Recent medical certificate if applicable' },
-    { type: 'Marriage Certificate', description: 'Marriage certificate if applicable' },
-  ];
-
-  // Mock documents (you might want to add a documents table to Supabase later)
-  const documents = [
-    { name: 'ID Document.pdf', uploadDate: '2024-03-01', type: 'Identification' },
-    { name: 'Proof of Address.pdf', uploadDate: '2024-02-15', type: 'Address Proof' },
-  ];
 
   if (memberLoading) {
     return (
@@ -121,7 +117,6 @@ export default function Profile() {
         <Skeleton className="h-8 w-64" />
         <div className="space-y-6">
           <Skeleton className="h-96" />
-          <Skeleton className="h-64" />
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />
         </div>
@@ -137,10 +132,6 @@ export default function Profile() {
 
       <div className="space-y-6">
         <AccountSettingsSection memberData={memberData} />
-        <DocumentsSection 
-          documents={documents}
-          documentTypes={documentTypes}
-        />
         <PaymentHistorySection 
           memberId={memberData?.id || ''}
           searchDate={searchDate}

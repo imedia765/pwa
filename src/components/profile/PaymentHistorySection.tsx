@@ -55,7 +55,7 @@ export const PaymentHistorySection = ({
   });
 
   return (
-    <Collapsible>
+    <Collapsible defaultOpen>
       <CollapsibleTrigger asChild>
         <Button 
           variant="default"

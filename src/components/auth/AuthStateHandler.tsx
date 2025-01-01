@@ -17,16 +17,28 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
         
         if (error) {
           console.error("Session check error:", error);
+          setIsLoggedIn(false);
+          navigate("/login");
           return;
         }
         
-        if (session) {
-          console.log("Active session found, redirecting to admin/profile");
+        if (session?.access_token && session?.refresh_token) {
+          console.log("Active session found");
           setIsLoggedIn(true);
-          navigate("/admin/profile");
+          if (window.location.pathname === "/login") {
+            navigate("/admin");
+          }
+        } else {
+          console.log("No active session");
+          setIsLoggedIn(false);
+          if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+            navigate("/login");
+          }
         }
       } catch (error) {
         console.error("Session check failed:", error);
+        setIsLoggedIn(false);
+        navigate("/login");
       }
     };
 
@@ -37,28 +49,50 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
       
       switch (event) {
         case "SIGNED_IN":
-          if (session) {
+          if (session?.access_token && session?.refresh_token) {
             console.log("Sign in event detected");
             setIsLoggedIn(true);
             toast({
               title: "Signed in successfully",
               description: "Welcome back!",
             });
-            handleSuccessfulLogin(session, navigate);
+            navigate("/admin");
           }
           break;
           
         case "SIGNED_OUT":
           console.log("User signed out");
           setIsLoggedIn(false);
+          navigate("/login");
           break;
           
         case "TOKEN_REFRESHED":
           console.log("Token refreshed successfully");
+          if (session?.access_token && session?.refresh_token) {
+            setIsLoggedIn(true);
+          } else {
+            setIsLoggedIn(false);
+            navigate("/login");
+          }
           break;
           
         case "USER_UPDATED":
           console.log("User data updated");
+          if (session?.access_token && session?.refresh_token) {
+            setIsLoggedIn(true);
+          }
+          break;
+          
+        case "INITIAL_SESSION":
+          console.log("Initial session check");
+          if (session?.access_token && session?.refresh_token) {
+            setIsLoggedIn(true);
+          } else {
+            setIsLoggedIn(false);
+            if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+              navigate("/login");
+            }
+          }
           break;
       }
     });
@@ -68,47 +102,4 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
       subscription.unsubscribe();
     };
   }, [navigate, setIsLoggedIn, toast]);
-};
-
-const handleSuccessfulLogin = async (session: any, navigate: (path: string) => void) => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) return;
-
-    const { data: member, error } = await supabase
-      .from('members')
-      .select('password_changed, profile_updated, email_verified')
-      .eq('email', user.email)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Error checking member status:", error);
-      navigate("/admin/profile");
-      return;
-    }
-
-    // Check if email is temporary
-    if (member && user.email.endsWith('@temp.pwaburton.org')) {
-      navigate("/admin/profile");
-      return;
-    }
-
-    // Check if profile needs to be updated
-    if (member && !member.profile_updated) {
-      navigate("/admin/profile");
-      return;
-    }
-
-    // Check if password needs to be changed
-    if (member && !member.password_changed) {
-      navigate("/change-password");
-      return;
-    }
-
-    // If all checks pass, redirect to profile
-    navigate("/admin/profile");
-  } catch (error) {
-    console.error("Error in handleSuccessfulLogin:", error);
-    navigate("/admin/profile");
-  }
 };

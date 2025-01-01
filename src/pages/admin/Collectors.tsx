@@ -30,42 +30,78 @@ export default function Collectors() {
         throw collectorsError;
       }
 
-      // Then, get all members
+      // Get all members with their collector information without any limit
       const { data: membersData, error: membersError } = await supabase
         .from('members')
-        .select('*')
-        .order('full_name');
+        .select(`
+          id,
+          member_number,
+          full_name,
+          email,
+          phone,
+          address,
+          status,
+          collector_id,
+          collector
+        `);
 
       if (membersError) {
         console.error('Error fetching members:', membersError);
         throw membersError;
       }
 
-      // Helper function to normalize collector names for comparison
-      const normalizeCollectorName = (name: string) => {
-        if (!name) return '';
-        return name.toLowerCase()
-          .replace(/[\/&,.-]/g, '') // Remove special characters
-          .replace(/\s+/g, '')      // Remove all whitespace
-          .trim();
-      };
+      // Log unassigned members for debugging
+      console.log('Fetching unassigned members...');
+      const unassignedMembers = membersData.filter(member => !member.collector_id);
+      if (unassignedMembers.length > 0) {
+        console.log(`Found ${unassignedMembers.length} unassigned members`);
+      }
 
-      // Map members to their collectors using normalized name matching
+      // Map members to their collectors
       const enhancedCollectorsData = collectorsData.map(collector => {
-        const collectorMembers = membersData.filter(member => {
-          if (!member.collector) return false;
-          
-          const normalizedCollectorName = normalizeCollectorName(collector.name);
-          const normalizedMemberCollector = normalizeCollectorName(member.collector);
-          
-          return normalizedCollectorName === normalizedMemberCollector;
-        });
+        // Filter members by collector_id
+        const collectorMembers = membersData.filter(member => 
+          member.collector_id === collector.id
+        );
+
+        // Log all counts for debugging
+        console.log(`Collector ${collector.name}:`);
+        console.log(`- Total members: ${collectorMembers.length}`);
+        
+        const activeMembers = collectorMembers.filter(member => 
+          member.status === 'active' || member.status === null
+        );
+        console.log(`- Active members: ${activeMembers.length}`);
+        
+        const inactiveMembers = collectorMembers.filter(member => 
+          member.status === 'inactive'
+        );
+        console.log(`- Inactive members: ${inactiveMembers.length}`);
 
         return {
           ...collector,
-          members: collectorMembers
+          members: collectorMembers,
+          activeMemberCount: activeMembers.length,
+          inactiveMemberCount: inactiveMembers.length,
+          totalMemberCount: collectorMembers.length
         };
       });
+
+      // Calculate and log all totals
+      const totals = enhancedCollectorsData.reduce((acc, collector) => {
+        return {
+          total: acc.total + collector.totalMemberCount,
+          active: acc.active + collector.activeMemberCount,
+          inactive: acc.inactive + collector.inactiveMemberCount
+        };
+      }, { total: 0, active: 0, inactive: 0 });
+
+      console.log('Final totals:');
+      console.log(`- Total members across all collectors: ${totals.total}`);
+      console.log(`- Total active members: ${totals.active}`);
+      console.log(`- Total inactive members: ${totals.inactive}`);
+      console.log(`- Unassigned members: ${unassignedMembers.length}`);
+      console.log(`- Grand total (including unassigned): ${totals.total + unassignedMembers.length}`);
 
       return enhancedCollectorsData;
     }

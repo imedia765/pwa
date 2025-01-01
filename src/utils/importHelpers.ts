@@ -7,7 +7,11 @@ interface CsvData {
 }
 
 export async function processCollectors(validData: CsvData[], userId: string) {
-  const uniqueCollectors = [...new Set(validData.map(item => item.collector).filter(Boolean))];
+  const uniqueCollectors = [...new Set(validData.map(item => {
+    // Handle both formats - direct collector field and Collector header
+    return (item.Collector || item.collector)?.trim();
+  }).filter(Boolean))];
+  
   console.log('Processing collectors:', uniqueCollectors);
   
   const collectorIdMap = new Map<string, string>();
@@ -19,8 +23,8 @@ export async function processCollectors(validData: CsvData[], userId: string) {
       // First try to find existing collector
       const { data: existingCollectors, error: selectError } = await supabase
         .from('collectors')
-        .select('id')
-        .ilike('name', collectorName);
+        .select('id, name')
+        .or(`name.ilike.${collectorName},name.ilike.${collectorName.toLowerCase()}`);
 
       if (selectError) {
         console.error('Error finding collector:', selectError);
@@ -34,15 +38,33 @@ export async function processCollectors(validData: CsvData[], userId: string) {
       }
 
       // If no existing collector, create new one
-      const collectorData = await transformCollectorForSupabase(collectorName);
-      if (!collectorData) {
-        console.warn('Unexpected null collector data for:', collectorName);
-        continue;
-      }
+      // Generate prefix from collector name (first letters of each word)
+      const prefix = collectorName
+        .split(/\s+/)
+        .map((word: string) => word.charAt(0).toUpperCase())
+        .join('');
 
+      // Get the next available number for this prefix
+      const { data: existingCollectorNumbers } = await supabase
+        .from('collectors')
+        .select('number')
+        .ilike('prefix', prefix);
+
+      const nextNumber = String(
+        Math.max(0, ...existingCollectorNumbers?.map(c => parseInt(c.number)) || [0]) + 1
+      ).padStart(2, '0');
+
+      // Create the new collector
       const { data: newCollector, error: insertError } = await supabase
         .from('collectors')
-        .insert(collectorData)
+        .insert({
+          name: collectorName,
+          prefix: prefix,
+          number: nextNumber,
+          active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         .select('id')
         .single();
 
@@ -71,14 +93,15 @@ export async function processMembers(validData: CsvData[], collectorIdMap: Map<s
     
     for (const member of batch) {
       try {
-        if (!member.collector) {
+        const collectorName = (member.Collector || member.collector)?.trim();
+        if (!collectorName) {
           console.warn('Member has no collector:', member);
           continue;
         }
 
-        const collectorId = collectorIdMap.get(member.collector);
+        const collectorId = collectorIdMap.get(collectorName);
         if (!collectorId) {
-          console.error(`No collector ID found for ${member.collector}`);
+          console.error(`No collector ID found for ${collectorName}`);
           continue;
         }
 
@@ -102,7 +125,8 @@ export async function processMembers(validData: CsvData[], collectorIdMap: Map<s
             .update({
               ...memberData,
               collector_id: collectorId,
-              collector: member.collector,
+              collector: collectorName,
+              updated_at: new Date().toISOString()
             })
             .eq('id', existingMembers[0].id);
 
@@ -117,7 +141,9 @@ export async function processMembers(validData: CsvData[], collectorIdMap: Map<s
             .insert({
               ...memberData,
               collector_id: collectorId,
-              collector: member.collector,
+              collector: collectorName,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             });
 
           if (insertError) {

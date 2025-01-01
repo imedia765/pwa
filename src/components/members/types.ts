@@ -18,8 +18,8 @@ export interface Member {
   membership_type: string | null;
   collector: string | null;
   cors_enabled: boolean | null;
-  password_changed: boolean | null;
-  name?: string; // Added for backward compatibility
+  auth_user_id: string | null;  // Added this line
+  name?: string; // Added for CoveredMembersOverview compatibility
   coveredMembers?: {
     spouses?: Array<{ name: string; dateOfBirth: string }>;
     dependants?: Array<{ name: string; dateOfBirth: string; relationship: string }>;

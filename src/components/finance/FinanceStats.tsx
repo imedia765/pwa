@@ -3,34 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateTotalBalance, calculateMonthlyIncome, calculateMonthlyExpenses, calculatePercentageChange } from "@/utils/financeCalculations";
-import { useToast } from "@/hooks/use-toast";
 
 export function FinanceStats() {
-  const { toast } = useToast();
-
   const { data: currentMonthPayments, isLoading: isLoadingCurrent } = useQuery({
     queryKey: ['payments', 'currentMonth'],
     queryFn: async () => {
       const currentDate = new Date();
       const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       
-      try {
-        const { data, error } = await supabase
-          .from('payments')
-          .select('*')
-          .gte('payment_date', firstDayOfMonth.toISOString().split('T')[0]);
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error fetching current month payments:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch current month payments"
-        });
-        return [];
-      }
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .gte('payment_date', firstDayOfMonth.toISOString());
+      
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -41,46 +28,26 @@ export function FinanceStats() {
       const firstDayOfPreviousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
       const lastDayOfPreviousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
       
-      try {
-        const { data, error } = await supabase
-          .from('payments')
-          .select('*')
-          .gte('payment_date', firstDayOfPreviousMonth.toISOString().split('T')[0])
-          .lte('payment_date', lastDayOfPreviousMonth.toISOString().split('T')[0]);
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error fetching previous month payments:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch previous month payments"
-        });
-        return [];
-      }
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .gte('payment_date', firstDayOfPreviousMonth.toISOString())
+        .lte('payment_date', lastDayOfPreviousMonth.toISOString());
+      
+      if (error) throw error;
+      return data || [];
     },
   });
 
   const { data: allPayments, isLoading: isLoadingAll } = useQuery({
     queryKey: ['payments', 'all'],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('payments')
-          .select('*');
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error fetching all payments:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch payment history"
-        });
-        return [];
-      }
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
     },
   });
 
