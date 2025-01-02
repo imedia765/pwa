@@ -1,66 +1,96 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { NavigationMenu } from "@/components/NavigationMenu";
-import Footer from "@/components/Footer";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ChangePassword from "./pages/ChangePassword";
+import Dashboard from "./pages/Dashboard";
+import Collectors from "./pages/Collectors";
+import Members from "./pages/Members";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import CollectorResponsibilities from "./pages/CollectorResponsibilities";
-import MedicalExaminerProcess from "./pages/MedicalExaminerProcess";
-import { AdminLayout } from "./components/AdminLayout";
-import Dashboard from "./pages/admin/Dashboard";
-import Members from "./pages/admin/Members";
-import Collectors from "./pages/admin/Collectors";
-import Registrations from "./pages/admin/Registrations";
-import Database from "./pages/admin/Database";
-import Finance from "./pages/admin/Finance";
-import Support from "./pages/admin/Support";
-import Profile from "./pages/admin/Profile";
+import { Footer } from "./components/Footer";
+import { MainLayout } from "./components/layouts/MainLayout";
 
 const queryClient = new QueryClient();
 
+// Protected Route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!session) {
+    return <Navigate to="/" />;
+  }
+
+  return <MainLayout>{children}</MainLayout>;
+};
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <NavigationMenu />
-            <div className="flex-grow">
+        <div className="flex flex-col min-h-screen">
+          <div className="flex-1">
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/change-password" element={<ChangePassword />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/members"
+                  element={
+                    <ProtectedRoute>
+                      <Members />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/collectors"
+                  element={
+                    <ProtectedRoute>
+                      <Collectors />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/collector-responsibilities" element={<CollectorResponsibilities />} />
-                <Route path="/medical-examiner-process" element={<MedicalExaminerProcess />} />
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="members" element={<Members />} />
-                  <Route path="collectors" element={<Collectors />} />
-                  <Route path="registrations" element={<Registrations />} />
-                  <Route path="database" element={<Database />} />
-                  <Route path="finance" element={<Finance />} />
-                  <Route path="support" element={<Support />} />
-                  <Route path="profile" element={<Profile />} />
-                </Route>
               </Routes>
-            </div>
-            <Footer />
+            </BrowserRouter>
           </div>
-        </BrowserRouter>
+          <Footer />
+        </div>
       </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

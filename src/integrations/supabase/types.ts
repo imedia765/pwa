@@ -9,208 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_notes: {
-        Row: {
-          admin_id: string | null
-          created_at: string
-          id: string
-          member_id: string | null
-          note: string
-          updated_at: string
-        }
-        Insert: {
-          admin_id?: string | null
-          created_at?: string
-          id?: string
-          member_id?: string | null
-          note: string
-          updated_at?: string
-        }
-        Update: {
-          admin_id?: string | null
-          created_at?: string
-          id?: string
-          member_id?: string | null
-          note?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_notes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      codebase_backups: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          download_count: number | null
-          filename: string
-          id: string
-          size: number | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          download_count?: number | null
-          filename: string
-          id?: string
-          size?: number | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          download_count?: number | null
-          filename?: string
-          id?: string
-          size?: number | null
-        }
-        Relationships: []
-      }
-      collectors: {
-        Row: {
-          active: boolean | null
-          created_at: string
-          email: string | null
-          id: string
-          name: string
-          number: string
-          phone: string | null
-          prefix: string
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          name: string
-          number: string
-          phone?: string | null
-          prefix: string
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          name?: string
-          number?: string
-          phone?: string | null
-          prefix?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      database_logs: {
-        Row: {
-          action: string
-          created_at: string
-          details: string | null
-          id: string
-          performed_by: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          details?: string | null
-          id?: string
-          performed_by?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          details?: string | null
-          id?: string
-          performed_by?: string | null
-        }
-        Relationships: []
-      }
-      error_logs: {
-        Row: {
-          context: Json | null
-          created_at: string
-          error_message: string
-          id: string
-          stack_trace: string | null
-          user_id: string | null
-        }
-        Insert: {
-          context?: Json | null
-          created_at?: string
-          error_message: string
-          id?: string
-          stack_trace?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          context?: Json | null
-          created_at?: string
-          error_message?: string
-          id?: string
-          stack_trace?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      family_members: {
-        Row: {
-          created_at: string
-          date_of_birth: string | null
-          gender: string | null
-          id: string
-          member_id: string | null
-          name: string
-          relationship: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          date_of_birth?: string | null
-          gender?: string | null
-          id?: string
-          member_id?: string | null
-          name: string
-          relationship: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          date_of_birth?: string | null
-          gender?: string | null
-          id?: string
-          member_id?: string | null
-          name?: string
-          relationship?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "family_members_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       members: {
         Row: {
           address: string | null
+          admin_note: string | null
           auth_user_id: string | null
           collector: string | null
           collector_id: string | null
           cors_enabled: boolean | null
           created_at: string
+          created_by: string | null
           date_of_birth: string | null
           default_password_hash: string | null
           email: string | null
           email_verified: boolean | null
+          family_member_dob: string | null
+          family_member_gender: string | null
+          family_member_name: string | null
+          family_member_relationship: string | null
           first_time_login: boolean | null
           full_name: string
           gender: string | null
@@ -219,28 +35,43 @@ export type Database = {
           member_number: string
           membership_type: string | null
           password_changed: boolean | null
+          payment_amount: number | null
+          payment_date: string | null
+          payment_notes: string | null
+          payment_type: string | null
           phone: string | null
           postcode: string | null
           profile_completed: boolean | null
           profile_updated: boolean | null
           registration_completed: boolean | null
+          registration_status: string | null
           role: Database["public"]["Enums"]["user_role"]
           status: string | null
+          ticket_description: string | null
+          ticket_priority: string | null
+          ticket_status: string | null
+          ticket_subject: string | null
           town: string | null
           updated_at: string
           verified: boolean | null
         }
         Insert: {
           address?: string | null
+          admin_note?: string | null
           auth_user_id?: string | null
           collector?: string | null
           collector_id?: string | null
           cors_enabled?: boolean | null
           created_at?: string
+          created_by?: string | null
           date_of_birth?: string | null
           default_password_hash?: string | null
           email?: string | null
           email_verified?: boolean | null
+          family_member_dob?: string | null
+          family_member_gender?: string | null
+          family_member_name?: string | null
+          family_member_relationship?: string | null
           first_time_login?: boolean | null
           full_name: string
           gender?: string | null
@@ -249,28 +80,43 @@ export type Database = {
           member_number: string
           membership_type?: string | null
           password_changed?: boolean | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_notes?: string | null
+          payment_type?: string | null
           phone?: string | null
           postcode?: string | null
           profile_completed?: boolean | null
           profile_updated?: boolean | null
           registration_completed?: boolean | null
+          registration_status?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
+          ticket_description?: string | null
+          ticket_priority?: string | null
+          ticket_status?: string | null
+          ticket_subject?: string | null
           town?: string | null
           updated_at?: string
           verified?: boolean | null
         }
         Update: {
           address?: string | null
+          admin_note?: string | null
           auth_user_id?: string | null
           collector?: string | null
           collector_id?: string | null
           cors_enabled?: boolean | null
           created_at?: string
+          created_by?: string | null
           date_of_birth?: string | null
           default_password_hash?: string | null
           email?: string | null
           email_verified?: boolean | null
+          family_member_dob?: string | null
+          family_member_gender?: string | null
+          family_member_name?: string | null
+          family_member_relationship?: string | null
           first_time_login?: boolean | null
           full_name?: string
           gender?: string | null
@@ -279,218 +125,207 @@ export type Database = {
           member_number?: string
           membership_type?: string | null
           password_changed?: boolean | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_notes?: string | null
+          payment_type?: string | null
           phone?: string | null
           postcode?: string | null
           profile_completed?: boolean | null
           profile_updated?: boolean | null
           registration_completed?: boolean | null
+          registration_status?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
+          ticket_description?: string | null
+          ticket_priority?: string | null
+          ticket_status?: string | null
+          ticket_subject?: string | null
           town?: string | null
           updated_at?: string
           verified?: boolean | null
         }
+        Relationships: []
+      }
+      members_collectors: {
+        Row: {
+          collector_profile_id: string
+          created_at: string
+          id: string
+          member_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          collector_profile_id: string
+          created_at?: string
+          id?: string
+          member_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          collector_profile_id?: string
+          created_at?: string
+          id?: string
+          member_profile_id?: string
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "members_collector_id_fkey"
-            columns: ["collector_id"]
+            foreignKeyName: "members_collectors_collector_profile_id_fkey"
+            columns: ["collector_profile_id"]
             isOneToOne: false
-            referencedRelation: "collectors"
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_collectors_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      payments: {
+      members_roles: {
         Row: {
-          amount: number
-          collector_id: string | null
           created_at: string
-          created_by: string | null
           id: string
-          member_id: string | null
-          notes: string | null
-          payment_date: string
-          payment_type: string
+          profile_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_roles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          auth_user_id: string
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          marital_status: string | null
+          member_number: string
+          membership_type: string | null
+          phone: string | null
+          postcode: string | null
           status: string | null
+          town: string | null
           updated_at: string
         }
         Insert: {
-          amount: number
-          collector_id?: string | null
+          address?: string | null
+          auth_user_id: string
           created_at?: string
-          created_by?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name: string
+          gender?: string | null
           id?: string
-          member_id?: string | null
-          notes?: string | null
-          payment_date?: string
-          payment_type: string
+          marital_status?: string | null
+          member_number: string
+          membership_type?: string | null
+          phone?: string | null
+          postcode?: string | null
           status?: string | null
+          town?: string | null
           updated_at?: string
         }
         Update: {
-          amount?: number
-          collector_id?: string | null
+          address?: string | null
+          auth_user_id?: string
           created_at?: string
-          created_by?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string
+          gender?: string | null
           id?: string
-          member_id?: string | null
-          notes?: string | null
-          payment_date?: string
-          payment_type?: string
+          marital_status?: string | null
+          member_number?: string
+          membership_type?: string | null
+          phone?: string | null
+          postcode?: string | null
           status?: string | null
+          town?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "payments_collector_id_fkey"
-            columns: ["collector_id"]
-            isOneToOne: false
-            referencedRelation: "collectors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      registrations: {
-        Row: {
-          created_at: string
-          id: string
-          member_id: string | null
-          status: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          member_id?: string | null
-          status?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          member_id?: string | null
-          status?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "registrations_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      support_tickets: {
-        Row: {
-          created_at: string
-          description: string
-          id: string
-          member_id: string | null
-          priority: string | null
-          status: string | null
-          subject: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          id?: string
-          member_id?: string | null
-          priority?: string | null
-          status?: string | null
-          subject: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: string
-          member_id?: string | null
-          priority?: string | null
-          status?: string | null
-          subject?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "support_tickets_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ticket_responses: {
-        Row: {
-          created_at: string
-          id: string
-          responder_id: string | null
-          response: string
-          ticket_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          responder_id?: string | null
-          response: string
-          ticket_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          responder_id?: string | null
-          response?: string
-          ticket_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_responses_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "support_tickets"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      delete_collector: {
-        Args: {
-          collector_id: string
-        }
-        Returns: undefined
-      }
-      merge_duplicate_collectors: {
+      authenticate_member:
+        | {
+            Args: {
+              p_member_number: string
+            }
+            Returns: {
+              id: string
+              member_number: string
+              auth_user_id: string
+              full_name: string
+              email: string
+              role: string
+            }[]
+          }
+        | {
+            Args: {
+              p_member_number: string
+              p_password: string
+            }
+            Returns: {
+              id: string
+              member_number: string
+              full_name: string
+              email: string
+              role: Database["public"]["Enums"]["user_role"]
+            }[]
+          }
+      current_user_is_admin: {
         Args: Record<PropertyKey, never>
-        Returns: {
-          merged_count: number
-          details: string
-        }[]
+        Returns: boolean
       }
-      normalize_collector_name: {
-        Args: {
-          name: string
-        }
-        Returns: string
-      }
-      sync_collector_ids: {
+      current_user_is_collector: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      get_user_role: {
+        Args: {
+          user_auth_id: string
+        }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      link_member_with_auth: {
+        Args: {
+          p_member_number: string
+          p_auth_user_id: string
+        }
         Returns: undefined
       }
     }
