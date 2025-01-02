@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Profile } from "@/integrations/supabase/types";
+import { Profile } from "@/integrations/supabase/types/profile";
 
 export const useProfile = () => {
   return useQuery({
@@ -25,7 +25,7 @@ export const useProfile = () => {
         .from("profiles")
         .select("*")
         .eq("auth_user_id", session.user.id)
-        .maybeSingle();
+        .single();
 
       if (profileError) {
         console.error("Profile fetch error:", profileError);
@@ -38,7 +38,7 @@ export const useProfile = () => {
           .from("members")
           .select("*")
           .eq("auth_user_id", session.user.id)
-          .maybeSingle();
+          .single();
 
         if (memberError) {
           console.error("Member fetch error:", memberError);
@@ -47,7 +47,7 @@ export const useProfile = () => {
 
         if (memberData) {
           // Create a profile from member data
-          const { error: insertError } = await supabase
+          const { data: newProfile, error: insertError } = await supabase
             .from("profiles")
             .insert({
               auth_user_id: session.user.id,
@@ -70,18 +70,6 @@ export const useProfile = () => {
           if (insertError) {
             console.error("Profile creation error:", insertError);
             throw insertError;
-          }
-
-          // Fetch the newly created profile
-          const { data: newProfile, error: newProfileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("auth_user_id", session.user.id)
-            .maybeSingle();
-
-          if (newProfileError) {
-            console.error("New profile fetch error:", newProfileError);
-            throw newProfileError;
           }
 
           console.log("Created and returning new profile:", newProfile);
