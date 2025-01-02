@@ -20,14 +20,14 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // First try to get profile from profiles table
+      // First try to get profile from profiles table using maybeSingle()
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("auth_user_id", session.user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError && profileError.code !== 'PGRST116') { // Ignore "no rows returned" error
+      if (profileError) {
         console.error("Profile fetch error:", profileError);
         throw profileError;
       }
@@ -39,7 +39,7 @@ export const useProfile = () => {
           .from("members")
           .select("*")
           .eq("auth_user_id", session.user.id)
-          .single();
+          .maybeSingle();
 
         if (memberError) {
           console.error("Member fetch error:", memberError);
