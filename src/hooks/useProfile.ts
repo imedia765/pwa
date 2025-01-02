@@ -6,7 +6,6 @@ export const useProfile = () => {
   return useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      // Get current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -21,12 +20,12 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // Fetch profile by auth_user_id
+      // Fetch profile directly using auth_user_id
       const { data, error } = await supabase
         .from("profiles")
-        .select()
+        .select("*")
         .eq("auth_user_id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Profile fetch error:", error);
