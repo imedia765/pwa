@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/integrations/supabase/types/profile";
@@ -28,25 +28,37 @@ export const ProfileCard = ({ profile, isLoading }: ProfileCardProps) => {
   if (!profile) {
     return (
       <Card className="p-6">
-        <p className="text-center text-muted-foreground">No profile data found</p>
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">No profile data found</p>
+          <p className="text-sm text-muted-foreground">Please check your profile settings or contact support.</p>
+        </div>
       </Card>
     );
   }
+
+  const initials = profile.full_name?.split(' ').map(n => n[0]).join('') || '??';
 
   return (
     <Card className="p-6">
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <Avatar className="h-16 w-16">
-            <AvatarFallback>
-              {profile.full_name?.split(' ').map(n => n[0]).join('')}
+            <AvatarFallback className="text-lg">
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div>
             <h2 className="text-2xl font-semibold">{profile.full_name}</h2>
-            <Badge variant={profile.status === 'active' ? 'success' : 'secondary'}>
-              {profile.status || 'Inactive'}
-            </Badge>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={profile.status === 'active' ? 'success' : 'secondary'}>
+                {profile.status || 'Inactive'}
+              </Badge>
+              {profile.membership_type && (
+                <Badge variant="outline" className="capitalize">
+                  {profile.membership_type}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
@@ -85,6 +97,18 @@ export const ProfileCard = ({ profile, isLoading }: ProfileCardProps) => {
               <p className="font-medium">
                 {new Date(profile.date_of_birth).toLocaleDateString()}
               </p>
+            </div>
+          )}
+          {profile.gender && (
+            <div>
+              <p className="text-sm text-muted-foreground">Gender</p>
+              <p className="font-medium capitalize">{profile.gender}</p>
+            </div>
+          )}
+          {profile.marital_status && (
+            <div>
+              <p className="text-sm text-muted-foreground">Marital Status</p>
+              <p className="font-medium capitalize">{profile.marital_status}</p>
             </div>
           )}
         </div>
