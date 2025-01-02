@@ -10,6 +10,8 @@ interface ProfileCardProps {
 }
 
 export const ProfileCard = ({ profile, isLoading }: ProfileCardProps) => {
+  console.log("ProfileCard rendering with:", { profile, isLoading });
+
   if (isLoading) {
     return (
       <Card className="p-6">
