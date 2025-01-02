@@ -20,20 +20,77 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // Fetch profile directly using auth_user_id
-      const { data, error } = await supabase
+      // First try to get profile from profiles table
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("auth_user_id", session.user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Profile fetch error:", error);
-        throw error;
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        throw profileError;
       }
 
-      console.log("Found profile:", data);
-      return data as Profile;
+      if (!profileData) {
+        // If no profile found, try to get data from members table
+        const { data: memberData, error: memberError } = await supabase
+          .from("members")
+          .select("*")
+          .eq("auth_user_id", session.user.id)
+          .maybeSingle();
+
+        if (memberError) {
+          console.error("Member fetch error:", memberError);
+          throw memberError;
+        }
+
+        if (memberData) {
+          // Create a profile from member data
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              auth_user_id: session.user.id,
+              member_number: memberData.member_number,
+              full_name: memberData.full_name,
+              email: memberData.email,
+              phone: memberData.phone,
+              address: memberData.address,
+              postcode: memberData.postcode,
+              town: memberData.town,
+              status: memberData.status,
+              membership_type: memberData.membership_type,
+              date_of_birth: memberData.date_of_birth,
+              gender: memberData.gender,
+              marital_status: memberData.marital_status
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error("Profile creation error:", insertError);
+            throw insertError;
+          }
+
+          // Fetch the newly created profile
+          const { data: newProfile, error: newProfileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("auth_user_id", session.user.id)
+            .maybeSingle();
+
+          if (newProfileError) {
+            console.error("New profile fetch error:", newProfileError);
+            throw newProfileError;
+          }
+
+          console.log("Created and returning new profile:", newProfile);
+          return newProfile as Profile;
+        }
+      }
+
+      console.log("Found profile:", profileData);
+      return profileData as Profile;
     },
     retry: 1,
     staleTime: 30000, // Cache for 30 seconds
