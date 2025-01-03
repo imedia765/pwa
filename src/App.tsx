@@ -62,15 +62,6 @@ function AuthWrapper() {
             description: "You have been signed out successfully.",
           });
         }
-      } else if (event === 'USER_DELETED') {
-        console.log('User account deleted');
-        queryClient.clear();
-        navigate('/login');
-        toast({
-          title: "Account Deleted",
-          description: "Your account has been deleted.",
-          variant: "destructive",
-        });
       }
     });
 
