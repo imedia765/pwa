@@ -23,49 +23,75 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
     queryKey: ['members', searchTerm, userRole],
     queryFn: async () => {
       console.log('Fetching members with role:', userRole);
-      let query = supabase
-        .from('members')
-        .select('*');
+      
+      // If user is a collector, get their collector name first
+      if (userRole === 'collector') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log('No authenticated user found');
+          return [];
+        }
+
+        console.log('Getting collector info for user:', user.id);
+        const { data: collectorData, error: collectorError } = await supabase
+          .from('members_collectors')
+          .select('name')
+          .eq('member_profile_id', user.id)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (collectorError) {
+          console.error('Error fetching collector data:', collectorError);
+          toast({
+            title: "Error",
+            description: "Failed to fetch collector information",
+            variant: "destructive",
+          });
+          throw collectorError;
+        }
+
+        if (!collectorData?.name) {
+          console.log('No collector data found for user');
+          return [];
+        }
+
+        console.log('Fetching members for collector:', collectorData.name);
+        
+        // Query members table with collector filter
+        let query = supabase
+          .from('members')
+          .select('*')
+          .eq('collector', collectorData.name);
+
+        if (searchTerm) {
+          query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching members:', error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch members",
+            variant: "destructive",
+          });
+          throw error;
+        }
+
+        console.log('Found members for collector:', data?.length);
+        return data as Member[];
+      }
+
+      // For non-collectors (admin), fetch all members
+      let query = supabase.from('members').select('*');
       
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // If user is a collector, get their collector name first
-      if (userRole === 'collector') {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          console.log('Getting collector name for user:', user.id);
-          const { data: collectorData, error: collectorError } = await supabase
-            .from('members_collectors')
-            .select('name')
-            .eq('member_profile_id', user.id)
-            .eq('active', true)
-            .maybeSingle();
+      const { data, error } = await query.order('created_at', { ascending: false });
 
-          if (collectorError) {
-            console.error('Error fetching collector data:', collectorError);
-            toast({
-              title: "Error",
-              description: "Failed to fetch collector information",
-              variant: "destructive",
-            });
-            throw collectorError;
-          }
-
-          // Only filter by collector name if we found one
-          if (collectorData?.name) {
-            console.log('Filtering members for collector:', collectorData.name);
-            query = query.eq('collector', collectorData.name);
-          } else {
-            console.log('No collector data found for user');
-          }
-        }
-      }
-      
-      const { data, error } = await query
-        .order('created_at', { ascending: false });
-      
       if (error) {
         console.error('Error fetching members:', error);
         toast({
@@ -75,8 +101,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         });
         throw error;
       }
-      
-      console.log('Fetched members count:', data?.length);
+
       return data as Member[];
     },
   });
