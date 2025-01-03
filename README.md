@@ -1,22 +1,22 @@
-# Welcome to your Lovable project
+# Welcome to your GPT Engineer project
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/a91849fc-f511-4184-9fe0-aebab22490f3
+**URL**: https://run.gptengineer.app/projects/0f4f445d-e89f-447f-9848-79ddd38f590e/improve
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
+**Use GPT Engineer**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a91849fc-f511-4184-9fe0-aebab22490f3) and start prompting.
+Simply visit the GPT Engineer project at [GPT Engineer](https://gptengineer.app/projects/0f4f445d-e89f-447f-9848-79ddd38f590e/improve) and start prompting.
 
-Changes made via Lovable will be committed automatically to this repo.
+Changes made via gptengineer.app will be committed automatically to this repo.
 
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in the GPT Engineer UI.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,8 +62,10 @@ This project is built with .
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/a91849fc-f511-4184-9fe0-aebab22490f3) and click on Share -> Publish.
+All GPT Engineer projects can be deployed directly via the GPT Engineer app.
+
+Simply visit your project at [GPT Engineer](https://gptengineer.app/projects/0f4f445d-e89f-447f-9848-79ddd38f590e/improve) and click on Share -> Publish.
 
 ## I want to use a custom domain - is that possible?
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.gptengineer.app/tips-tricks/custom-domain/)
