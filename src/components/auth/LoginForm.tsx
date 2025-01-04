@@ -42,23 +42,32 @@ const LoginForm = () => {
       const email = `${memberNumber.toLowerCase()}@temp.com`;
       const password = memberNumber;
 
-      // If member already has auth_user_id, try to sign in
-      if (member.auth_user_id) {
-        console.log('Member has existing auth account, attempting to sign in');
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      // Try to sign in first, regardless of auth_user_id
+      console.log('Attempting to sign in first');
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (signInError) {
-          console.error('Sign in error:', signInError);
-          throw signInError;
+      if (!signInError && signInData.user) {
+        console.log('Sign in successful');
+        
+        // If member doesn't have auth_user_id, update it
+        if (!member.auth_user_id) {
+          console.log('Updating member with auth_user_id');
+          const { error: updateError } = await supabase
+            .from('members')
+            .update({ auth_user_id: signInData.user.id })
+            .eq('id', member.id);
+
+          if (updateError) {
+            console.error('Error updating member with auth_user_id:', updateError);
+            // Don't throw as login was successful
+          }
         }
-
-        console.log('Sign in successful:', signInData);
-      } else {
-        // If no auth_user_id, create new account
-        console.log('Creating new auth account for member');
+      } else if (signInError && !member.auth_user_id) {
+        // Only try to sign up if sign in failed and member has no auth_user_id
+        console.log('Sign in failed, creating new account');
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -76,7 +85,6 @@ const LoginForm = () => {
 
         if (signUpData.user) {
           console.log('New account created, updating member record');
-          // Update member with new auth_user_id
           const { error: updateError } = await supabase
             .from('members')
             .update({ auth_user_id: signUpData.user.id })
@@ -86,18 +94,10 @@ const LoginForm = () => {
             console.error('Error updating member with auth_user_id:', updateError);
             throw updateError;
           }
-
-          // Sign in with new account
-          const { error: finalSignInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-          if (finalSignInError) {
-            console.error('Final sign in error:', finalSignInError);
-            throw finalSignInError;
-          }
         }
+      } else {
+        // If sign in failed and member has auth_user_id, throw error
+        throw signInError;
       }
 
       toast({
