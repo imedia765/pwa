@@ -33,13 +33,32 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
 
         console.log('Getting collector info for user:', user.id);
         
-        // First get the collector's assigned members using the members_collectors table
+        // First get the member profile for the authenticated user
+        const { data: memberProfile, error: memberError } = await supabase
+          .from('members')
+          .select('id, member_number')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (memberError) {
+          console.error('Error fetching member profile:', memberError);
+          throw memberError;
+        }
+
+        if (!memberProfile) {
+          console.log('No member profile found for user');
+          return [];
+        }
+
+        console.log('Found member profile:', memberProfile);
+        
+        // Then get the collector info using the member's ID
         const { data: collectorData, error: collectorError } = await supabase
           .from('members_collectors')
           .select('name')
-          .eq('member_profile_id', user.id)
+          .eq('member_profile_id', memberProfile.id)
           .eq('active', true)
-          .maybeSingle();  // Changed from .single() to .maybeSingle()
+          .maybeSingle();
 
         if (collectorError) {
           console.error('Error fetching collector data:', collectorError);
@@ -52,7 +71,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         }
 
         if (!collectorData?.name) {
-          console.log('No collector data found for user');
+          console.log('No collector data found for member');
           return [];
         }
 
