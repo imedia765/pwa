@@ -51,8 +51,16 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
   });
 
   if (isLoading) return <div className="text-center py-4">Loading members...</div>;
-  if (error) return <div className="text-center py-4 text-red-500">Error loading members: {error.message}</div>;
-  if (!members?.length) return <div className="text-center py-4">No members found</div>;
+  if (error) return (
+    <div className="text-center py-4 text-red-500">
+      Error loading members: {error instanceof Error ? error.message : 'Unknown error'}
+    </div>
+  );
+  if (!members?.length) return (
+    <div className="text-center py-4 text-yellow-500">
+      No members found. Please check your collector permissions or try refreshing the page.
+    </div>
+  );
 
   return (
     <div className="space-y-4">

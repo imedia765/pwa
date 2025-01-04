@@ -63,7 +63,7 @@ export const useCollectorMembers = (searchTerm: string) => {
 
       console.log('Found collector:', collectorData);
       
-      // Query members table with collector filter
+      // Query members table with collector filter using parameterized query
       let query = supabase
         .from('members')
         .select('*')
