@@ -36,10 +36,10 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         // First get the collector's assigned members using the members_collectors table
         const { data: collectorData, error: collectorError } = await supabase
           .from('members_collectors')
-          .select('name, member_profile_id')
+          .select('name')
           .eq('member_profile_id', user.id)
           .eq('active', true)
-          .single();
+          .maybeSingle();  // Changed from .single() to .maybeSingle()
 
         if (collectorError) {
           console.error('Error fetching collector data:', collectorError);
