@@ -21,7 +21,7 @@ const LoginForm = () => {
       // First, verify member exists
       const { data: members, error: memberError } = await supabase
         .from('members')
-        .select('id, member_number')
+        .select('id, member_number, auth_user_id')
         .eq('member_number', memberNumber)
         .limit(1);
 
@@ -38,19 +38,27 @@ const LoginForm = () => {
       const member = members[0];
       console.log('Member found:', member);
 
+      // Generate consistent email and password from member number
       const email = `${memberNumber.toLowerCase()}@temp.com`;
       const password = memberNumber;
 
-      // Try to sign in first
-      console.log('Attempting to sign in');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // If member already has auth_user_id, try to sign in
+      if (member.auth_user_id) {
+        console.log('Member has existing auth account, attempting to sign in');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      // If sign in fails due to invalid credentials, try to sign up
-      if (signInError && signInError.message === 'Invalid login credentials') {
-        console.log('Sign in failed, attempting to create account');
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          throw signInError;
+        }
+
+        console.log('Sign in successful:', signInData);
+      } else {
+        // If no auth_user_id, create new account
+        console.log('Creating new auth account for member');
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -61,50 +69,34 @@ const LoginForm = () => {
           }
         });
 
-        if (signUpError && signUpError.message !== 'User already registered') {
+        if (signUpError) {
           console.error('Sign up error:', signUpError);
           throw signUpError;
         }
 
-        // Try signing in again after signup attempt
-        console.log('Attempting final sign in');
-        const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (finalSignInError) {
-          console.error('Final sign in error:', finalSignInError);
-          throw finalSignInError;
-        }
-
-        if (finalSignInData.user) {
-          // Update member with auth_user_id if not already set
+        if (signUpData.user) {
+          console.log('New account created, updating member record');
+          // Update member with new auth_user_id
           const { error: updateError } = await supabase
             .from('members')
-            .update({ auth_user_id: finalSignInData.user.id })
-            .eq('id', member.id)
-            .is('auth_user_id', null);
+            .update({ auth_user_id: signUpData.user.id })
+            .eq('id', member.id);
 
           if (updateError) {
             console.error('Error updating member with auth_user_id:', updateError);
-            // Don't throw here as the login was successful
+            throw updateError;
           }
-        }
-      } else if (signInError) {
-        console.error('Sign in error:', signInError);
-        throw signInError;
-      } else if (signInData.user) {
-        // Update member with auth_user_id if not already set
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ auth_user_id: signInData.user.id })
-          .eq('id', member.id)
-          .is('auth_user_id', null);
 
-        if (updateError) {
-          console.error('Error updating member with auth_user_id:', updateError);
-          // Don't throw here as the login was successful
+          // Sign in with new account
+          const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (finalSignInError) {
+            console.error('Final sign in error:', finalSignInError);
+            throw finalSignInError;
+          }
         }
       }
 
