@@ -24,8 +24,8 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
     queryFn: async () => {
       console.log('Fetching members with role:', userRole);
       
-      // If user is a collector, get their collector name first
       if (userRole === 'collector') {
+        // First get the collector's profile
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           console.log('No authenticated user found');
@@ -33,6 +33,8 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         }
 
         console.log('Getting collector info for user:', user.id);
+        
+        // Get the collector's assigned members using the members_collectors table
         const { data: collectorData, error: collectorError } = await supabase
           .from('members_collectors')
           .select('name')
@@ -55,7 +57,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
           return [];
         }
 
-        console.log('Fetching members for collector:', collectorData.name);
+        console.log('Found collector name:', collectorData.name);
         
         // Query members table with collector filter
         let query = supabase
@@ -67,23 +69,23 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
           query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
         }
 
-        const { data, error } = await query.order('created_at', { ascending: false });
+        const { data: membersData, error: membersError } = await query.order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching members:', error);
+        if (membersError) {
+          console.error('Error fetching members:', membersError);
           toast({
             title: "Error",
             description: "Failed to fetch members",
             variant: "destructive",
           });
-          throw error;
+          throw membersError;
         }
 
-        console.log('Found members for collector:', data?.length);
-        return data as Member[];
+        console.log('Found members for collector:', membersData?.length);
+        return membersData as Member[];
       }
 
-      // For non-collectors (admin), fetch all members
+      // For admin users, fetch all members
       let query = supabase.from('members').select('*');
       
       if (searchTerm) {
