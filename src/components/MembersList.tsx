@@ -25,7 +25,6 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
       console.log('Fetching members with role:', userRole);
       
       if (userRole === 'collector') {
-        // First get the collector's profile
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           console.log('No authenticated user found');
@@ -34,13 +33,13 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
 
         console.log('Getting collector info for user:', user.id);
         
-        // Get the collector's assigned members using the members_collectors table
+        // First get the collector's assigned members using the members_collectors table
         const { data: collectorData, error: collectorError } = await supabase
           .from('members_collectors')
-          .select('name')
+          .select('name, member_profile_id')
           .eq('member_profile_id', user.id)
           .eq('active', true)
-          .maybeSingle();
+          .single();
 
         if (collectorError) {
           console.error('Error fetching collector data:', collectorError);
@@ -57,7 +56,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
           return [];
         }
 
-        console.log('Found collector name:', collectorData.name);
+        console.log('Found collector:', collectorData);
         
         // Query members table with collector filter
         let query = supabase
