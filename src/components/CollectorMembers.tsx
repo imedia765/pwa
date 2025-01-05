@@ -37,9 +37,8 @@ const CollectorMembers = ({ collectorName }: { collectorName: string }) => {
         query.eq('collector', collectorName);
       } else {
         // Collectors can only see their assigned members
-        query
-          .eq('collector', collectorName)
-          .eq('collector_id', user.id);
+        // Changed from collector_id to collector name check
+        query.eq('collector', collectorName);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
