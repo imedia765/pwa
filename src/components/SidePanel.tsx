@@ -1,7 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, Settings, Users, UserCheck } from "lucide-react";
+import { LayoutDashboard, Settings, Users, UserCheck, History } from "lucide-react";
 import { UserRole } from "@/hooks/useRoleAccess";
-import { useEffect } from "react";
 
 interface SidePanelProps {
   onTabChange: (value: string) => void;
@@ -10,7 +9,6 @@ interface SidePanelProps {
 
 const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
   const getTabs = () => {
-    console.log('Getting tabs for role:', userRole);
     const tabs = [
       {
         value: 'dashboard',
@@ -20,7 +18,7 @@ const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
       },
       {
         value: 'users',
-        label: 'Members',
+        label: 'Users',
         icon: Users,
         roles: ['collector', 'admin']
       },
@@ -31,6 +29,12 @@ const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
         roles: ['admin']
       },
       {
+        value: 'audit',
+        label: 'Audit Logs',
+        icon: History,
+        roles: ['admin']
+      },
+      {
         value: 'settings',
         label: 'Settings',
         icon: Settings,
@@ -38,20 +42,14 @@ const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
       }
     ];
 
-    // Only show tabs that the user has access to based on their role
     return tabs.filter(tab => {
       if (!userRole) return false;
       return tab.roles.includes(userRole);
     });
   };
 
-  // Log role changes
-  useEffect(() => {
-    console.log('SidePanel userRole changed:', userRole);
-  }, [userRole]);
-
   return (
-    <div className="h-screen fixed left-0 top-0 w-64 glass-card border-r border-white/10">
+    <div className="h-screen w-64 glass-card border-r border-white/10">
       <div className="p-6">
         <h2 className="text-xl font-medium mb-6">Navigation</h2>
         <Tabs 

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from '@/integrations/supabase/types';
-import { UserCheck, Users } from 'lucide-react';
+import { UserCheck, Users, CreditCard, Link2, AlertCircle } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -11,14 +11,16 @@ import {
 import TotalCount from "@/components/TotalCount";
 import CollectorMembers from "@/components/CollectorMembers";
 import PrintButtons from "@/components/PrintButtons";
-import { PostgrestError } from '@supabase/supabase-js';
-import CollectorStatusBadge from './collectors/CollectorStatusBadge';
-import CollectorMemberInfo from './collectors/CollectorMemberInfo';
 
 type MemberCollector = Database['public']['Tables']['members_collectors']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
+interface CollectorWithCounts extends MemberCollector {
+  memberCount: number;
+}
+
 const CollectorsList = () => {
+  // Fetch all members for the master print functionality
   const { data: allMembers } = useQuery({
     queryKey: ['all_members'],
     queryFn: async () => {
@@ -48,7 +50,7 @@ const CollectorsList = () => {
           active,
           created_at,
           updated_at,
-          member_profile_id
+          member_number
         `)
         .order('number', { ascending: true });
       
@@ -57,69 +59,31 @@ const CollectorsList = () => {
         throw collectorsError;
       }
 
-      console.log('Collectors data received:', collectorsData);
+      if (!collectorsData) return [];
 
-      if (!collectorsData || collectorsData.length === 0) {
-        console.log('No collectors found in the database');
-        return [];
-      }
-
-      const collectorsWithDetails = await Promise.all(collectorsData.map(async (collector) => {
-        console.log('Processing collector:', collector.name);
-        
-        // Get member count
+      // Get member count for each collector
+      const collectorsWithCounts = await Promise.all(collectorsData.map(async (collector) => {
         const { count } = await supabase
           .from('members')
           .select('*', { count: 'exact', head: true })
           .eq('collector', collector.name);
 
-        // Get member number if profile exists
-        let memberNumber = null;
-        if (collector.member_profile_id) {
-          console.log('Fetching member details for collector:', collector.name);
-          const { data: memberData, error: memberError } = await supabase
-            .from('members')
-            .select('member_number')
-            .eq('id', collector.member_profile_id)
-            .maybeSingle();
-          
-          if (memberError) {
-            console.error('Error fetching member details:', memberError);
-          } else if (memberData) {
-            console.log('Found member number for collector:', memberData.member_number);
-            memberNumber = memberData.member_number;
-          } else {
-            console.log('No member data found for collector:', collector.name);
-          }
-        } else {
-          console.log('Collector has no member profile:', collector.name);
-        }
-        
         return {
           ...collector,
-          memberCount: count || 0,
-          memberNumber
+          memberCount: count || 0
         };
       }));
 
-      console.log('Final collectors with details:', collectorsWithDetails);
-      return collectorsWithDetails;
+      return collectorsWithCounts;
     },
   });
 
+  // Calculate total members across all collectors
   const totalMembers = collectors?.reduce((total, collector) => total + (collector.memberCount || 0), 0) || 0;
 
   if (collectorsLoading) return <div className="text-center py-4">Loading collectors...</div>;
-  if (collectorsError) {
-    console.error('Collectors error:', collectorsError);
-    const postgrestError = collectorsError as PostgrestError;
-    return (
-      <div className="text-center py-4 text-red-500">
-        Error loading collectors: {postgrestError.message}
-      </div>
-    );
-  }
-  if (!collectors?.length) return <div className="text-center py-4">No collectors found.</div>;
+  if (collectorsError) return <div className="text-center py-4 text-red-500">Error loading collectors: {collectorsError.message}</div>;
+  if (!collectors?.length) return <div className="text-center py-4">No collectors found</div>;
 
   return (
     <div className="space-y-4">
@@ -158,7 +122,6 @@ const CollectorsList = () => {
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-white">{collector.name}</p>
                       <span className="text-sm text-gray-400">#{collector.number}</span>
-                      <CollectorMemberInfo memberNumber={collector.memberNumber} />
                     </div>
                     <div className="flex items-center gap-2 text-sm text-dashboard-text">
                       <UserCheck className="w-4 h-4" />
@@ -169,7 +132,13 @@ const CollectorsList = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <PrintButtons collectorName={collector.name || ''} />
-                  <CollectorStatusBadge active={collector.active} />
+                  <div className={`px-3 py-1 rounded-full ${
+                    collector.active 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {collector.active ? 'Active' : 'Inactive'}
+                  </div>
                 </div>
               </div>
             </AccordionTrigger>

@@ -3,12 +3,14 @@ import CommitteeUpdate from '@/components/auth/CommitteeUpdate';
 import MembershipExpectations from '@/components/auth/MembershipExpectations';
 import ImportantInformation from '@/components/auth/ImportantInformation';
 import MedicalExaminer from '@/components/auth/MedicalExaminer';
-import Bismillah from '@/components/Bismillah';
 
 const Login = () => {
   return (
     <div className="min-h-screen bg-dashboard-dark">
-      <Bismillah />
+      <div className="w-full bg-dashboard-card/50 py-4 text-center border-b border-white/10">
+        <p className="text-xl text-white font-arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <p className="text-sm text-dashboard-text mt-1">In the name of Allah, the Most Gracious, the Most Merciful</p>
+      </div>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">

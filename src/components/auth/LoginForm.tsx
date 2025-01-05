@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from '@tanstack/react-query';
 
 const LoginForm = () => {
   const [memberNumber, setMemberNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +23,7 @@ const LoginForm = () => {
       // First, verify member exists
       const { data: members, error: memberError } = await supabase
         .from('members')
-        .select('id, member_number, auth_user_id')
+        .select('id, member_number')
         .eq('member_number', memberNumber)
         .limit(1);
 
@@ -38,36 +40,21 @@ const LoginForm = () => {
       const member = members[0];
       console.log('Member found:', member);
 
-      // Generate consistent email and password from member number
       const email = `${memberNumber.toLowerCase()}@temp.com`;
       const password = memberNumber;
 
-      // Try to sign in first, regardless of auth_user_id
-      console.log('Attempting to sign in first');
+      console.log('Attempting sign in with:', { email });
+      
+      // Try to sign in
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (!signInError && signInData.user) {
-        console.log('Sign in successful');
+      // If sign in fails due to invalid credentials, try to sign up
+      if (signInError && signInError.message === 'Invalid login credentials') {
+        console.log('Attempting signup for new user');
         
-        // If member doesn't have auth_user_id, update it
-        if (!member.auth_user_id) {
-          console.log('Updating member with auth_user_id');
-          const { error: updateError } = await supabase
-            .from('members')
-            .update({ auth_user_id: signInData.user.id })
-            .eq('id', member.id);
-
-          if (updateError) {
-            console.error('Error updating member with auth_user_id:', updateError);
-            // Don't throw as login was successful
-          }
-        }
-      } else if (signInError && !member.auth_user_id) {
-        // Only try to sign up if sign in failed and member has no auth_user_id
-        console.log('Sign in failed, creating new account');
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -79,12 +66,12 @@ const LoginForm = () => {
         });
 
         if (signUpError) {
-          console.error('Sign up error:', signUpError);
+          console.error('Signup error:', signUpError);
           throw signUpError;
         }
 
         if (signUpData.user) {
-          console.log('New account created, updating member record');
+          // Update member with auth_user_id
           const { error: updateError } = await supabase
             .from('members')
             .update({ auth_user_id: signUpData.user.id })
@@ -94,11 +81,37 @@ const LoginForm = () => {
             console.error('Error updating member with auth_user_id:', updateError);
             throw updateError;
           }
+
+          console.log('Signup successful, attempting final sign in');
+          
+          // Final sign in attempt after successful signup
+          const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (finalSignInError) {
+            console.error('Final sign in error:', finalSignInError);
+            throw finalSignInError;
+          }
+
+          // Verify session is established
+          if (!finalSignInData?.session) {
+            throw new Error('Failed to establish session');
+          }
         }
-      } else {
-        // If sign in failed and member has auth_user_id, throw error
+      } else if (signInError) {
         throw signInError;
       }
+
+      // Verify session after sign in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Failed to establish session');
+      }
+
+      // Invalidate all queries to refresh data
+      await queryClient.invalidateQueries();
 
       toast({
         title: "Login successful",
@@ -108,6 +121,9 @@ const LoginForm = () => {
       navigate('/');
     } catch (error: any) {
       console.error('Login error:', error);
+      // Clear any existing session
+      await supabase.auth.signOut();
+      
       toast({
         title: "Login failed",
         description: error.message,

@@ -11,9 +11,4 @@ export interface Member {
   town?: string;
   postcode?: string;
   role?: string;
-  collector?: string;
-  collector_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  verified?: boolean;
 }
