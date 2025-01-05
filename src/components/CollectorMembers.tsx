@@ -10,19 +10,52 @@ const CollectorMembers = ({ collectorName }: { collectorName: string }) => {
   const { data: members, isLoading } = useQuery({
     queryKey: ['collector_members', collectorName],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('collector', collectorName)
-        .order('created_at', { ascending: false });
+      console.log('Fetching members for collector:', collectorName);
       
-      if (error) throw error;
+      // First get the current user's role
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.id);
+
+      if (!user) throw new Error('No authenticated user');
+
+      // Get user's role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      console.log('User role:', roleData?.role);
+
+      // Fetch members based on role
+      const query = supabase
+        .from('members')
+        .select('*');
+
+      if (roleData?.role === 'admin') {
+        // Admins can see all members for a specific collector
+        query.eq('collector', collectorName);
+      } else {
+        // Collectors can only see their assigned members
+        query
+          .eq('collector', collectorName)
+          .eq('collector_id', user.id);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching members:', error);
+        throw error;
+      }
+
+      console.log('Fetched members:', data);
       return data as Member[];
     },
   });
 
   if (isLoading) return <div>Loading members...</div>;
-  if (!members?.length) return null;
+  if (!members?.length) return <div className="text-gray-400">No members assigned to this collector</div>;
 
   return (
     <ScrollArea className="h-[400px] w-full rounded-md">
