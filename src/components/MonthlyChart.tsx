@@ -39,52 +39,70 @@ const MonthlyChart = () => {
   });
 
   return (
-    <div className="dashboard-card h-[400px]">
-      <h2 className="text-xl font-medium mb-6">Payment History</h2>
-      <div className="h-[calc(100%-4rem)]">
+    <div className="dashboard-card h-[400px] transition-all duration-300 hover:shadow-lg">
+      <h2 className="text-xl font-semibold mb-6 text-dashboard-accent1">Payment History</h2>
+      <div className="h-[calc(100%-4rem)] relative">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={paymentHistory || []} 
-            margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="rgba(255,255,255,0.05)"
+              vertical={false}
+            />
             <XAxis 
               dataKey="month" 
               stroke="#828179"
-              tick={{ fill: '#828179' }}
+              tick={{ fill: '#828179', fontSize: 12 }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
             />
             <YAxis 
               stroke="#828179"
-              tick={{ fill: '#828179' }}
+              tick={{ fill: '#828179', fontSize: 12 }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              tickFormatter={(value) => `£${value}`}
             />
             <Tooltip
               contentStyle={{
                 backgroundColor: '#1a1a1a',
                 border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
+                borderRadius: '12px',
+                padding: '12px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
               }}
-              labelStyle={{ color: '#828179' }}
+              labelStyle={{ color: '#828179', fontWeight: 600, marginBottom: '8px' }}
+              itemStyle={{ color: '#C4C3BB', fontSize: '12px' }}
+              formatter={(value) => [`£${value}`, '']}
             />
             <Legend 
               verticalAlign="top" 
               height={36}
-              wrapperStyle={{ color: '#828179' }}
+              wrapperStyle={{ 
+                color: '#828179',
+                paddingBottom: '20px',
+              }}
+              iconType="circle"
+              iconSize={8}
             />
             <Line
               type="monotone"
               dataKey="annualPayment"
               name="Annual Payment"
               stroke="#8989DE"
-              strokeWidth={2}
-              dot={{ fill: '#8989DE' }}
+              strokeWidth={3}
+              dot={{ fill: '#8989DE', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: '#8989DE', strokeWidth: 2 }}
             />
             <Line
               type="monotone"
               dataKey="emergencyPayment"
               name="Emergency Payment"
               stroke="#61AAF2"
-              strokeWidth={2}
-              dot={{ fill: '#61AAF2' }}
+              strokeWidth={3}
+              dot={{ fill: '#61AAF2', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: '#61AAF2', strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>
