@@ -124,6 +124,18 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-dashboard-dark flex flex-col">
       <div className="w-full bg-dashboard-card/50 py-4 flex justify-between items-center px-6 border-b border-white/10">
+        {/* Mobile Menu Button - Moved inside header */}
+        <div className="lg:hidden">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="bg-dashboard-card/50 border-white/10"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        </div>
+
         <div className="text-center flex-1">
           <p className="text-xl text-white font-arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
           <p className="text-sm text-dashboard-accent1 mt-1">In the name of Allah, the Most Gracious, the Most Merciful</p>
@@ -139,18 +151,6 @@ const Index = () => {
       </div>
       
       <div className="flex flex-1 relative">
-        {/* Mobile Menu Button */}
-        <div className="lg:hidden fixed top-4 left-4 z-50">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="bg-dashboard-card/50 border-white/10"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        </div>
-
         {/* Backdrop for mobile */}
         {isSidebarOpen && (
           <div 
