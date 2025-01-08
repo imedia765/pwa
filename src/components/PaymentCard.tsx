@@ -3,6 +3,10 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { format, addDays, isAfter, isBefore, differenceInDays } from 'date-fns';
 import { AlertOctagon, Check, Clock } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PaymentCardProps {
   annualPaymentStatus?: 'completed' | 'pending' | 'due' | 'overdue';
@@ -46,7 +50,7 @@ const PaymentCard = ({
     if (isBefore(today, dueDateObj)) {
       return {
         color: 'text-blue-400',
-        message: 'Due: January 1st, 2025',
+        message: `Due: ${formatDate(dueDate)}`,
         warning: null
       };
     } else if (isBefore(today, twentyEightDaysAfterDue)) {
@@ -108,9 +112,29 @@ const PaymentCard = ({
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-2xl font-bold text-white">£40</p>
-              <p className={`text-lg font-bold ${yearlyPaymentInfo.color}`}>
-                {yearlyPaymentInfo.message}
-              </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !annualPaymentDueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <span className={yearlyPaymentInfo.color}>
+                      {yearlyPaymentInfo.message}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={annualPaymentDueDate ? new Date(annualPaymentDueDate) : undefined}
+                    disabled
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               {yearlyPaymentInfo.warning && (
                 <p className="text-sm text-rose-500 font-medium mt-2">
                   ⚠️ {yearlyPaymentInfo.warning}
@@ -148,9 +172,29 @@ const PaymentCard = ({
               <p className="text-2xl font-bold text-white">
                 £{emergencyCollectionAmount}
               </p>
-              <p className="text-lg font-bold text-dashboard-warning">
-                Due: {formatDate(emergencyCollectionDueDate)}
-              </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !emergencyCollectionDueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <span className="text-dashboard-warning">
+                      Due: {formatDate(emergencyCollectionDueDate)}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={emergencyCollectionDueDate ? new Date(emergencyCollectionDueDate) : undefined}
+                    disabled
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               {lastEmergencyPaymentDate && (
                 <div className="mt-2">
                   <p className="text-xs text-dashboard-muted">
