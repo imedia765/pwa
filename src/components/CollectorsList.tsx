@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from '@/integrations/supabase/types';
-import { UserCheck, Users, CreditCard, Link2, AlertCircle } from 'lucide-react';
+import { UserCheck, Users } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
