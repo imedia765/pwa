@@ -6,6 +6,10 @@ import ContactInfo from "./profile/ContactInfo";
 import AddressDetails from "./profile/AddressDetails";
 import MembershipDetails from "./profile/MembershipDetails";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
+import EditProfileDialog from "./members/EditProfileDialog";
+import { useState } from "react";
 
 interface MemberProfileCardProps {
   memberProfile: Member | null;
@@ -13,6 +17,7 @@ interface MemberProfileCardProps {
 
 const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
   const { userRole } = useRoleAccess();
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   if (!memberProfile) {
     return (
@@ -27,6 +32,11 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
     );
   }
 
+  const handleProfileUpdated = () => {
+    // Trigger a refresh of the profile data
+    window.location.reload();
+  };
+
   return (
     <Card className="bg-dashboard-card border-white/10 shadow-lg hover:border-dashboard-accent1/50 transition-all duration-300">
       <ProfileHeader />
@@ -39,6 +49,17 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
               <div className="space-y-4">
                 <ContactInfo memberProfile={memberProfile} />
                 <AddressDetails memberProfile={memberProfile} />
+                
+                {/* Modified condition to show edit button */}
+                {(userRole === 'collector' || userRole === 'admin' || userRole === 'member') && (
+                  <Button
+                    onClick={() => setShowEditDialog(true)}
+                    className="w-full bg-dashboard-accent2 hover:bg-dashboard-accent2/80 text-white transition-colors"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -51,6 +72,13 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
           </div>
         </div>
       </CardContent>
+
+      <EditProfileDialog
+        member={memberProfile}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        onProfileUpdated={handleProfileUpdated}
+      />
     </Card>
   );
 };

@@ -10,27 +10,51 @@ const MonthlyChart = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No user logged in');
 
-      const { data: memberData } = await supabase
-        .from('members')
-        .select('yearly_payment_amount, emergency_collection_amount, yearly_payment_status, emergency_collection_status')
-        .eq('auth_user_id', session.user.id)
-        .maybeSingle();
-
-      if (!memberData) {
-        console.error('No member data found');
-        return [];
+      // First get the member number from the user metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      const memberNumber = user?.user_metadata?.member_number;
+      
+      if (!memberNumber) {
+        console.error('No member number found in user metadata');
+        throw new Error('Member number not found');
       }
+
+      // Fetch all payments for this member
+      const { data: payments, error } = await supabase
+        .from('payment_requests')
+        .select('*')
+        .eq('member_number', memberNumber)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
 
       // Generate last 12 months of data
       const months = [];
+      const now = new Date();
       for (let i = 11; i >= 0; i--) {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+        // Filter payments for this month
+        const monthPayments = payments?.filter(payment => {
+          const paymentDate = new Date(payment.created_at);
+          return paymentDate >= monthStart && paymentDate <= monthEnd;
+        }) || [];
+
+        // Calculate totals for each payment type
+        const annualPayment = monthPayments
+          .filter(p => p.payment_type === 'Annual Payment' && p.status === 'completed')
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+        const emergencyPayment = monthPayments
+          .filter(p => p.payment_type === 'Emergency Collection' && p.status === 'completed')
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
         
         months.push({
           month: date.toLocaleString('default', { month: 'short' }),
-          annualPayment: memberData.yearly_payment_status === 'completed' ? memberData.yearly_payment_amount || 40 : 0,
-          emergencyPayment: memberData.emergency_collection_status === 'completed' ? memberData.emergency_collection_amount || 0 : 0,
+          annualPayment,
+          emergencyPayment,
         });
       }
 
