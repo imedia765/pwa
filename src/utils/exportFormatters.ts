@@ -45,3 +45,38 @@ export const generateTSVContent = (members: Member[]) => {
   
   return [headers.join('\t'), ...tsvRows].join('\n');
 };
+
+export const downloadExcel = (members: Member[], collectorName?: string) => {
+  const content = generateTSVContent(members);
+  const blob = new Blob([content], { type: 'text/tab-separated-values' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `members_${collectorName || 'all'}_${new Date().toISOString().split('T')[0]}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+export const downloadCSV = (members: Member[], collectorName?: string) => {
+  const content = generateCSVContent(members);
+  const blob = new Blob([content], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `members_${collectorName || 'all'}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+export const openInGoogleSheets = (members: Member[], collectorName?: string) => {
+  const content = generateCSVContent(members);
+  const blob = new Blob([content], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const sheetsUrl = `https://docs.google.com/spreadsheets/d/create?usp=sheets_home&ths=true`;
+  window.open(sheetsUrl, '_blank');
+  window.URL.revokeObjectURL(url);
+};
