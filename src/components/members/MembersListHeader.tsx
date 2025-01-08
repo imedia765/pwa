@@ -27,7 +27,7 @@ const MembersListHeader = ({
 
   return (
     <>
-      <div className="flex justify-end mb-4 gap-2">
+      <div className="flex w-full mb-4">
         <PrintButtons 
           allMembers={members}
           collectorName={collectorInfo?.name}
