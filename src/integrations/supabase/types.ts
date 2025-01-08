@@ -90,6 +90,60 @@ export type Database = {
         }
         Relationships: []
       }
+      git_operations_logs: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          message: string | null
+          operation_type: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          message?: string | null
+          operation_type: string
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          message?: string | null
+          operation_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      git_repository_configs: {
+        Row: {
+          branch: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          repo_url: string
+        }
+        Insert: {
+          branch?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          repo_url: string
+        }
+        Update: {
+          branch?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          repo_url?: string
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           address: string | null
@@ -261,6 +315,103 @@ export type Database = {
         }
         Relationships: []
       }
+      monitoring_logs: {
+        Row: {
+          details: Json | null
+          event_type: Database["public"]["Enums"]["monitoring_event_type"]
+          id: string
+          metric_name: string
+          metric_value: number
+          severity: Database["public"]["Enums"]["severity_level"] | null
+          timestamp: string | null
+        }
+        Insert: {
+          details?: Json | null
+          event_type: Database["public"]["Enums"]["monitoring_event_type"]
+          id?: string
+          metric_name: string
+          metric_value: number
+          severity?: Database["public"]["Enums"]["severity_level"] | null
+          timestamp?: string | null
+        }
+        Update: {
+          details?: Json | null
+          event_type?: Database["public"]["Enums"]["monitoring_event_type"]
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          severity?: Database["public"]["Enums"]["severity_level"] | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      payment_requests: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          collector_id: string
+          created_at: string | null
+          id: string
+          member_id: string
+          member_number: string
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_type: string
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          collector_id: string
+          created_at?: string | null
+          id?: string
+          member_id: string
+          member_number: string
+          notes?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_type: string
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          collector_id?: string
+          created_at?: string | null
+          id?: string
+          member_id?: string
+          member_number?: string
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_type?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_requests_collector_id_fkey"
+            columns: ["collector_id"]
+            isOneToOne: false
+            referencedRelation: "members_collectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["member_number"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -296,6 +447,24 @@ export type Database = {
         }
         Returns: string
       }
+      audit_security_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          check_type: string
+          status: string
+          details: Json
+        }[]
+      }
+      check_member_numbers: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          issue_type: string
+          description: string
+          affected_table: string
+          member_number: string
+          details: Json
+        }[]
+      }
       generate_full_backup: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -322,6 +491,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_user: {
+        Args: {
+          user_uid: string
+        }
+        Returns: boolean
+      }
       is_payment_overdue: {
         Args: {
           due_date: string
@@ -342,11 +517,26 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      validate_user_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          check_type: string
+          status: string
+          details: Json
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "collector" | "member"
       audit_operation: "create" | "update" | "delete"
       backup_operation_type: "backup" | "restore"
+      monitoring_event_type:
+        | "system_performance"
+        | "api_latency"
+        | "error_rate"
+        | "user_activity"
+        | "resource_usage"
+      payment_method: "bank_transfer" | "cash"
       severity_level: "info" | "warning" | "error" | "critical"
     }
     CompositeTypes: {
