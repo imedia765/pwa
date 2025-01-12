@@ -4,16 +4,18 @@ import { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+type UserRole = Database['public']['Enums']['app_role'];
+
 interface RoleSelectProps {
-  currentRole: Database['public']['Enums']['app_role'];
+  currentRole: UserRole;
   userId: string;
-  onRoleChange: (role: Database['public']['Enums']['app_role']) => void;
+  onRoleChange: (role: UserRole) => void;
 }
 
 const RoleSelect = ({ currentRole, userId, onRoleChange }: RoleSelectProps) => {
   const { toast } = useToast();
 
-  const handleRoleChange = async (newRole: Database['public']['Enums']['app_role']) => {
+  const handleRoleChange = async (newRole: UserRole) => {
     try {
       // First check if the role already exists
       const { data: existingRole } = await supabase

@@ -10,21 +10,43 @@ export function useAuthSession() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (skipStorageClear = false) => {
     try {
+      console.log('Starting sign out process...');
       setLoading(true);
-      await Promise.all([
-        queryClient.resetQueries(),
-        queryClient.clear(),
-        localStorage.clear(),
-        supabase.auth.signOut()
-      ]);
+      
+      // Clear all queries first
+      await queryClient.resetQueries();
+      await queryClient.clear();
+      
+      // Only clear storage if not skipping (during login flow)
+      if (!skipStorageClear) {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      console.log('Sign out successful');
       setSession(null);
+      
+      // Add a small delay to ensure state is fully cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Force a clean page reload to clear any remaining state
+      window.location.href = '/login';
+      
     } catch (error: any) {
       console.error('Error during sign out:', error);
+      let description = error.message;
+      if (error.message.includes('502')) {
+        description = "Failed to connect to the server. Please check your network connection and try again.";
+      }
       toast({
         title: "Error signing out",
-        description: error.message,
+        description,
         variant: "destructive",
       });
     } finally {
@@ -35,15 +57,16 @@ export function useAuthSession() {
   const handleAuthError = async (error: AuthError) => {
     console.error('Auth error:', error);
     
-    // Handle specific auth errors
     if (error.message.includes('refresh_token_not_found') || 
         error.message.includes('invalid refresh token')) {
+      console.log('Token refresh failed, signing out...');
+      await handleSignOut();
+      
       toast({
         title: "Session Expired",
         description: "Please sign in again",
         variant: "destructive",
       });
-      await handleSignOut();
     } else {
       toast({
         title: "Authentication Error",
@@ -56,12 +79,16 @@ export function useAuthSession() {
   useEffect(() => {
     let mounted = true;
 
+    console.log('Initializing auth session...');
+    
     const initializeSession = async () => {
       try {
         setLoading(true);
+        console.log('Fetching current session...');
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
+          console.error('Session fetch error:', error);
           await handleAuthError(error);
           return;
         }
@@ -70,6 +97,11 @@ export function useAuthSession() {
           setSession(currentSession);
           if (currentSession?.user) {
             console.log('Session initialized for user:', currentSession.user.id);
+          } else {
+            console.log('No active session found');
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
           }
         }
       } catch (error: any) {
@@ -87,14 +119,16 @@ export function useAuthSession() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       if (!mounted) return;
 
-      console.log('Auth state changed:', event, currentSession?.user?.id);
+      console.log('Auth state changed:', {
+        event,
+        hasSession: !!currentSession,
+        userId: currentSession?.user?.id
+      });
       
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-        if (!currentSession) {
-          console.log('No session after token refresh, signing out');
-          await handleSignOut();
-          return;
-        }
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !currentSession) {
+        console.log('User signed out or token refresh failed');
+        await handleSignOut();
+        return;
       }
 
       if (event === 'SIGNED_IN') {

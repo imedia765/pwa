@@ -27,17 +27,17 @@ const ITEMS_PER_PAGE = 10;
 
 const RoleManagementList = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
   const [page, setPage] = useState(0);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['users', searchTerm, page],
+    queryKey: ['users', searchTerm, selectedRole, page],
     queryFn: async () => {
-      console.log('Fetching users with search term:', searchTerm, 'page:', page);
+      console.log('Fetching users with search term:', searchTerm, 'role:', selectedRole, 'page:', page);
       
       try {
-        // First verify if current user has admin access
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
@@ -56,7 +56,6 @@ const RoleManagementList = () => {
           throw new Error('Unauthorized: Admin access required');
         }
 
-        // First get the members
         let membersQuery = supabase
           .from('members')
           .select(`
@@ -79,23 +78,35 @@ const RoleManagementList = () => {
           throw membersError;
         }
 
-        // Then get their roles in a separate query
         const memberAuthIds = membersData
           .map(m => m.auth_user_id)
           .filter(id => id !== null) as string[];
 
-        const { data: rolesData, error: userRolesError } = await supabase
+        let rolesQuery = supabase
           .from('user_roles')
           .select('user_id, role')
           .in('user_id', memberAuthIds);
+
+        if (selectedRole !== 'all') {
+          rolesQuery = rolesQuery.eq('role', selectedRole);
+        }
+
+        const { data: rolesData, error: userRolesError } = await rolesQuery;
 
         if (userRolesError) {
           console.error('Error fetching user roles:', userRolesError);
           throw userRolesError;
         }
 
-        // Map the roles to the members
-        return membersData.map(member => {
+        const filteredMembers = membersData.filter(member => {
+          if (selectedRole === 'all') return true;
+          return rolesData.some(r => 
+            r.user_id === member.auth_user_id && 
+            r.role === selectedRole
+          );
+        });
+
+        return filteredMembers.map(member => {
           const userRoles = rolesData
             .filter(r => r.user_id === member.auth_user_id)
             .map(r => ({ role: r.role }));
@@ -149,6 +160,10 @@ const RoleManagementList = () => {
       <RoleManagementHeader
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
+        selectedRole={selectedRole}
+        onRoleChange={setSelectedRole}
+        totalCount={users?.length || 0}
+        filteredCount={users?.length || 0}
       />
       
       <ScrollArea 
