@@ -125,15 +125,15 @@ const EditProfileDialog = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-dashboard-accent1">Status</span>
-              <span className="text-dashboard-accent2 font-medium">{member.status}</span>
+              <span className="text-dashboard-accent1 font-medium">{member.status}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-dashboard-accent1">Collector</span>
-              <span className="text-dashboard-accent2 font-medium">{member.collector}</span>
+              <span className="text-dashboard-accent1 font-medium">{member.collector}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-dashboard-accent1">Member Number</span>
-              <span className="text-dashboard-accent2 font-medium">{member.member_number}</span>
+              <span className="text-dashboard-accent1 font-medium">{member.member_number}</span>
             </div>
           </div>
         </div>
