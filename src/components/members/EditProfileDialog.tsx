@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { formatDate } from "@/lib/dateFormat";
 
 const formSchema = z.object({
   full_name: z.string().min(2, {
@@ -68,7 +69,7 @@ const EditProfileDialog = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: member.full_name || "",
-      date_of_birth: member.date_of_birth || "",
+      date_of_birth: member.date_of_birth ? formatDate(member.date_of_birth) : "",
       email: member.email || "",
       phone: member.phone || "",
       address: member.address || "",
