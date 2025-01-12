@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   full_name: z.string().min(2, {
@@ -117,6 +118,27 @@ const EditProfileDialog = ({
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold text-dashboard-accent1">Edit Profile</DialogTitle>
         </DialogHeader>
+
+        {/* Member Status Section */}
+        <div className="p-4 rounded-lg bg-dashboard-cardHover border border-dashboard-cardBorder">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-dashboard-accent1">Status</span>
+              <span className="text-dashboard-accent2 font-medium">{member.status}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-dashboard-accent1">Collector</span>
+              <span className="text-dashboard-accent2 font-medium">{member.collector}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-dashboard-accent1">Member Number</span>
+              <span className="text-dashboard-accent2 font-medium">{member.member_number}</span>
+            </div>
+          </div>
+        </div>
+
+        <Separator className="my-4 bg-dashboard-cardBorder" />
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -208,54 +230,6 @@ const EditProfileDialog = ({
                       <Input {...field} className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="membership_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-dashboard-text">Membership Type</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-dashboard-text">Status</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="collector"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-dashboard-text">Collector</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="member_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-dashboard-text">Member Number</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
-                    </FormControl>
                   </FormItem>
                 )}
               />
