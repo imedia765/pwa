@@ -113,9 +113,9 @@ const EditProfileDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-3xl bg-dashboard-card-dark text-dashboard-text">
+      <DialogContent className="w-full max-w-3xl bg-dashboard-card border border-dashboard-cardBorder">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold text-dashboard-text">Edit Profile</DialogTitle>
+          <DialogTitle className="text-2xl font-semibold text-dashboard-accent1">Edit Profile</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -125,9 +125,9 @@ const EditProfileDialog = ({
                 name="full_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel className="text-dashboard-text">Name</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-dashboard-card" />
+                      <Input {...field} className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -138,9 +138,9 @@ const EditProfileDialog = ({
                 name="date_of_birth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
+                    <FormLabel className="text-dashboard-text">Date of Birth</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" className="bg-dashboard-card" />
+                      <Input {...field} type="date" className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -151,9 +151,9 @@ const EditProfileDialog = ({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-dashboard-text">Email</FormLabel>
                     <FormControl>
-                      <Input {...field} type="email" className="bg-dashboard-card" />
+                      <Input {...field} type="email" className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -164,9 +164,9 @@ const EditProfileDialog = ({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel className="text-dashboard-text">Phone</FormLabel>
                     <FormControl>
-                      <Input {...field} type="tel" className="bg-dashboard-card" />
+                      <Input {...field} type="tel" className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -177,9 +177,9 @@ const EditProfileDialog = ({
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address</FormLabel>
+                    <FormLabel className="text-dashboard-text">Address</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-dashboard-card" />
+                      <Input {...field} className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -190,9 +190,9 @@ const EditProfileDialog = ({
                 name="town"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Town</FormLabel>
+                    <FormLabel className="text-dashboard-text">Town</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-dashboard-card" />
+                      <Input {...field} className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -203,9 +203,9 @@ const EditProfileDialog = ({
                 name="postcode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Postcode</FormLabel>
+                    <FormLabel className="text-dashboard-text">Postcode</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-dashboard-card" />
+                      <Input {...field} className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -216,9 +216,9 @@ const EditProfileDialog = ({
                 name="membership_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Membership Type</FormLabel>
+                    <FormLabel className="text-dashboard-text">Membership Type</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
                     </FormControl>
                   </FormItem>
                 )}
@@ -228,9 +228,9 @@ const EditProfileDialog = ({
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel className="text-dashboard-text">Status</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
                     </FormControl>
                   </FormItem>
                 )}
@@ -240,9 +240,9 @@ const EditProfileDialog = ({
                 name="collector"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Collector</FormLabel>
+                    <FormLabel className="text-dashboard-text">Collector</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
                     </FormControl>
                   </FormItem>
                 )}
@@ -252,9 +252,9 @@ const EditProfileDialog = ({
                 name="member_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Member Number</FormLabel>
+                    <FormLabel className="text-dashboard-text">Member Number</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                      <Input {...field} disabled className="bg-dashboard-dark/50 border-dashboard-cardBorder text-dashboard-text/50 cursor-not-allowed" />
                     </FormControl>
                   </FormItem>
                 )}
@@ -265,14 +265,14 @@ const EditProfileDialog = ({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="w-32 bg-dashboard-card text-dashboard-text hover:bg-dashboard-card/80"
+                className="bg-dashboard-dark text-dashboard-text hover:bg-dashboard-cardHover hover:text-white border-dashboard-cardBorder"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-32 bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
+                className="bg-dashboard-accent1 text-white hover:bg-dashboard-accent1/80"
               >
                 {isSubmitting ? "Saving..." : "Save changes"}
               </Button>
