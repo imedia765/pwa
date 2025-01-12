@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -27,6 +26,7 @@ const formSchema = z.object({
   full_name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
+  date_of_birth: z.string().optional(),
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
@@ -42,6 +42,10 @@ const formSchema = z.object({
   postcode: z.string().min(5, {
     message: "Postcode must be at least 5 characters.",
   }),
+  membership_type: z.string().optional(),
+  status: z.string().optional(),
+  collector: z.string().optional(),
+  member_number: z.string().optional(),
 });
 
 interface EditProfileDialogProps {
@@ -63,11 +67,16 @@ const EditProfileDialog = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: member.full_name || "",
+      date_of_birth: member.date_of_birth || "",
       email: member.email || "",
       phone: member.phone || "",
       address: member.address || "",
       town: member.town || "",
       postcode: member.postcode || "",
+      membership_type: member.membership_type || "",
+      status: member.status || "",
+      collector: member.collector || "",
+      member_number: member.member_number || "",
     },
   });
 
@@ -80,6 +89,7 @@ const EditProfileDialog = ({
         .from("members")
         .update({
           full_name: values.full_name,
+          date_of_birth: values.date_of_birth,
           email: values.email,
           phone: values.phone,
           address: values.address,
@@ -103,105 +113,168 @@ const EditProfileDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-dashboard-card text-dashboard-text">
+      <DialogContent className="w-full max-w-3xl bg-dashboard-card-dark text-dashboard-text">
         <DialogHeader>
-          <DialogTitle className="text-dashboard-text">Edit Profile</DialogTitle>
+          <DialogTitle className="text-2xl font-semibold text-dashboard-text">Edit Profile</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} className="bg-dashboard-card-dark" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="email" className="bg-dashboard-card-dark" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="tel" className="bg-dashboard-card-dark" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input {...field} className="bg-dashboard-card-dark" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="town"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Town</FormLabel>
-                  <FormControl>
-                    <Input {...field} className="bg-dashboard-card-dark" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="postcode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Postcode</FormLabel>
-                  <FormControl>
-                    <Input {...field} className="bg-dashboard-card-dark" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end space-x-4 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="bg-dashboard-card" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="date_of_birth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" className="bg-dashboard-card" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" className="bg-dashboard-card" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="tel" className="bg-dashboard-card" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="bg-dashboard-card" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="town"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Town</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="bg-dashboard-card" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="postcode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Postcode</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="bg-dashboard-card" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="membership_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Membership Type</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="collector"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Collector</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="member_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Member Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled className="bg-dashboard-card opacity-50" />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="flex justify-end space-x-4 pt-6">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="bg-dashboard-card-dark text-dashboard-text hover:bg-dashboard-card-dark/80"
+                className="w-32 bg-dashboard-card text-dashboard-text hover:bg-dashboard-card/80"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
+                className="w-32 bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
               >
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving..." : "Save changes"}
               </Button>
             </div>
           </form>
