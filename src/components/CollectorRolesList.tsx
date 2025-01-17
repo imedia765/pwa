@@ -145,7 +145,7 @@ const CollectorRolesList = () => {
   return (
     <div className="space-y-6 p-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-dashboard-accent1">Active Collectors and Roles</h2>
+        <h2 className="text-2xl font-semibold text-white">Active Collectors and Roles</h2>
         <Badge variant="outline" className="text-dashboard-accent1">
           {collectors?.length || 0} Collectors
         </Badge>
@@ -163,9 +163,9 @@ const CollectorRolesList = () => {
                       <User className="h-5 w-5 text-dashboard-accent1" />
                       <h3 className="text-lg font-medium text-white">{collector.full_name}</h3>
                     </div>
-                    <div className="flex flex-col space-y-1 text-dashboard-muted">
-                      <span>Member #: {collector.member_number}</span>
-                      <span className="font-mono text-xs">ID: {collector.auth_user_id}</span>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-dashboard-softBlue">Member #: {collector.member_number}</span>
+                      <span className="font-mono text-xs text-dashboard-softBlue">ID: {collector.auth_user_id}</span>
                     </div>
                   </div>
                 </div>
@@ -175,9 +175,9 @@ const CollectorRolesList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-dashboard-accent1">Role</TableHead>
-                      <TableHead className="text-dashboard-accent1">Assigned Date</TableHead>
-                      <TableHead className="text-dashboard-accent1">Status</TableHead>
+                      <TableHead className="text-dashboard-softBlue">Role</TableHead>
+                      <TableHead className="text-dashboard-softBlue">Assigned Date</TableHead>
+                      <TableHead className="text-dashboard-softBlue">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -186,18 +186,18 @@ const CollectorRolesList = () => {
                         <TableCell>
                           <Badge 
                             variant="outline"
-                            className="bg-dashboard-accent1/10 text-dashboard-accent1 border-dashboard-accent1/20"
+                            className="bg-dashboard-accent1/10 text-dashboard-softBlue border-dashboard-accent1/20"
                           >
                             {roleDetail.role}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-dashboard-text">
+                        <TableCell className="text-dashboard-softBlue">
                           {format(new Date(roleDetail.created_at), 'PPp')}
                         </TableCell>
                         <TableCell>
                           <Badge 
                             variant="outline" 
-                            className="bg-dashboard-accent3/10 text-dashboard-accent3 border-dashboard-accent3/20"
+                            className="bg-dashboard-accent3/10 text-dashboard-softGreen border-dashboard-accent3/20"
                           >
                             Active
                           </Badge>
@@ -208,115 +208,115 @@ const CollectorRolesList = () => {
                 </Table>
 
                 <Accordion type="single" collapsible className="w-full">
-                {/* useRoleAccess Status */}
-                <AccordionItem value="roleAccess">
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-dashboard-accent3" />
-                      <span>Role Access Status</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <span className="text-dashboard-muted">Current Role:</span>
-                        <Badge variant="outline">{userRole}</Badge>
-                        <span className="text-dashboard-muted">Loading:</span>
-                        <Badge variant={roleLoading ? "destructive" : "secondary"}>
-                          {roleLoading ? "Loading" : "Ready"}
-                        </Badge>
-                        <span className="text-dashboard-muted">Permissions:</span>
-                        <div className="space-y-1">
-                          {Object.entries(permissions).map(([key, value]) => (
-                            <Badge 
-                              key={key}
-                              variant={value ? "secondary" : "outline"}
-                              className="mr-1"
-                            >
-                              {key}
-                            </Badge>
-                          ))}
+                  {/* Role Access Status */}
+                  <AccordionItem value="roleAccess">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-dashboard-accent3" />
+                        <span className="text-dashboard-softBlue">Role Access Status</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span className="text-dashboard-softBlue">Current Role:</span>
+                          <Badge variant="outline" className="text-dashboard-softBlue">{userRole}</Badge>
+                          <span className="text-dashboard-softBlue">Loading:</span>
+                          <Badge variant={roleLoading ? "destructive" : "secondary"} className="text-dashboard-softBlue">
+                            {roleLoading ? "Loading" : "Ready"}
+                          </Badge>
+                          <span className="text-dashboard-softBlue">Permissions:</span>
+                          <div className="space-y-1">
+                            {Object.entries(permissions).map(([key, value]) => (
+                              <Badge 
+                                key={key}
+                                variant={value ? "secondary" : "outline"}
+                                className="mr-1 text-dashboard-softBlue"
+                              >
+                                {key}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                {/* useEnhancedRoleAccess Status */}
-                <AccordionItem value="enhancedAccess">
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <Database className="h-5 w-5 text-dashboard-accent4" />
-                      <span>Enhanced Role Status</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <span className="text-dashboard-muted">Query Status:</span>
-                        <Badge variant={enhancedLoading ? "destructive" : "secondary"}>
-                          {enhancedLoading ? "Loading" : "Ready"}
-                        </Badge>
-                        <span className="text-dashboard-muted">Enhanced Roles:</span>
-                        <div className="space-y-1">
-                          {enhancedRoles?.map((role) => (
-                            <Badge 
-                              key={role}
-                              variant="outline"
-                              className="mr-1"
-                            >
-                              {role}
-                            </Badge>
-                          ))}
+                  {/* Enhanced Role Status */}
+                  <AccordionItem value="enhancedAccess">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-5 w-5 text-dashboard-accent4" />
+                        <span className="text-dashboard-softBlue">Enhanced Role Status</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span className="text-dashboard-softBlue">Query Status:</span>
+                          <Badge variant={enhancedLoading ? "destructive" : "secondary"}>
+                            {enhancedLoading ? "Loading" : "Ready"}
+                          </Badge>
+                          <span className="text-dashboard-softBlue">Enhanced Roles:</span>
+                          <div className="space-y-1">
+                            {enhancedRoles?.map((role) => (
+                              <Badge 
+                                key={role}
+                                variant="outline"
+                                className="mr-1"
+                              >
+                                {role}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                {/* useRoleSync Status */}
-                <AccordionItem value="roleSync">
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <RefreshCw className="h-5 w-5 text-dashboard-accent5" />
-                      <span>Role Sync Status</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <span className="text-dashboard-muted">Sync Status:</span>
-                        <Badge variant={syncStatus ? "secondary" : "outline"}>
-                          {syncStatus ? "Synced" : "Pending"}
-                        </Badge>
+                  {/* Role Sync Status */}
+                  <AccordionItem value="roleSync">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="h-5 w-5 text-dashboard-accent5" />
+                        <span className="text-dashboard-softBlue">Role Sync Status</span>
                       </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span className="text-dashboard-softBlue">Sync Status:</span>
+                          <Badge variant={syncStatus ? "secondary" : "outline"}>
+                            {syncStatus ? "Synced" : "Pending"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                {/* roleStore Status */}
-                <AccordionItem value="roleStore">
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <HardDrive className="h-5 w-5 text-dashboard-accent6" />
-                      <span>Role Store Status</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <span className="text-dashboard-muted">Store Status:</span>
-                        <Badge variant={roleStore.isLoading ? "destructive" : "secondary"}>
-                          {roleStore.isLoading ? "Loading" : "Ready"}
-                        </Badge>
-                        <span className="text-dashboard-muted">Store Error:</span>
-                        <Badge variant={roleStore.error ? "destructive" : "secondary"}>
-                          {roleStore.error ? "Error" : "None"}
-                        </Badge>
+                  {/* Role Store Status */}
+                  <AccordionItem value="roleStore">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <HardDrive className="h-5 w-5 text-dashboard-accent6" />
+                        <span className="text-dashboard-softBlue">Role Store Status</span>
                       </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span className="text-dashboard-softBlue">Store Status:</span>
+                          <Badge variant={roleStore.isLoading ? "destructive" : "secondary"}>
+                            {roleStore.isLoading ? "Loading" : "Ready"}
+                          </Badge>
+                          <span className="text-dashboard-softBlue">Store Error:</span>
+                          <Badge variant={roleStore.error ? "destructive" : "secondary"}>
+                            {roleStore.error ? "Error" : "None"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 </Accordion>
               </div>
             </div>
