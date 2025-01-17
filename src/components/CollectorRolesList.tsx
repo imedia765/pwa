@@ -29,7 +29,7 @@ const CollectorRolesList = () => {
 
         // Get roles for each member
         const membersWithRoles = await Promise.all(
-          members.map(async (member) => {
+          (members || []).map(async (member) => {
             const { data: roles } = await supabase
               .from('user_roles')
               .select('role')
@@ -58,9 +58,17 @@ const CollectorRolesList = () => {
     );
   }
 
+  if (!collectors || collectors.length === 0) {
+    return (
+      <div className="text-center p-4">
+        <p className="text-gray-500">No collectors found</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {collectors?.map((collector) => (
+      {collectors.map((collector) => (
         <Card key={collector.id} className="p-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">

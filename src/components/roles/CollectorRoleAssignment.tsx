@@ -21,15 +21,11 @@ export const CollectorRoleAssignment = ({
   const handleAssignRole = async () => {
     setIsLoading(true);
     try {
-      // Generate collector details from member number
-      const prefix = memberNumber.substring(0, 2);
-      const number = memberNumber.substring(2);
-
       const { data, error } = await supabase.rpc('assign_collector_role', {
         member_id: userId,
-        collector_name: memberNumber, // Using member number as initial name
-        collector_prefix: prefix,
-        collector_number: number
+        collector_name: memberNumber,
+        collector_prefix: memberNumber.substring(0, 2),
+        collector_number: memberNumber.substring(2)
       });
 
       if (error) throw error;
