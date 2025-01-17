@@ -127,7 +127,7 @@ const CollectorRolesList = () => {
 
   if (error || roleError) {
     return (
-      <div className="flex items-center justify-center p-4 text-red-500">
+      <div className="flex items-center justify-center p-4 text-dashboard-softBlue">
         <AlertCircle className="w-4 h-4 mr-2" />
         <span>Error loading collectors</span>
       </div>
@@ -137,7 +137,7 @@ const CollectorRolesList = () => {
   if (isLoading || roleLoading || enhancedLoading) {
     return (
       <div className="flex justify-center items-center p-4">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin text-dashboard-softBlue" />
       </div>
     );
   }
@@ -145,8 +145,8 @@ const CollectorRolesList = () => {
   return (
     <div className="space-y-6 p-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-white">Active Collectors and Roles</h2>
-        <Badge variant="outline" className="text-dashboard-accent1">
+        <h2 className="text-2xl font-semibold text-dashboard-softBlue">Active Collectors and Roles</h2>
+        <Badge variant="outline" className="text-dashboard-softBlue border-dashboard-softBlue">
           {collectors?.length || 0} Collectors
         </Badge>
       </div>
@@ -160,8 +160,8 @@ const CollectorRolesList = () => {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-dashboard-accent1" />
-                      <h3 className="text-lg font-medium text-white">{collector.full_name}</h3>
+                      <User className="h-5 w-5 text-dashboard-softBlue" />
+                      <h3 className="text-lg font-medium text-dashboard-softBlue">{collector.full_name}</h3>
                     </div>
                     <div className="flex flex-col space-y-1">
                       <span className="text-dashboard-softBlue">Member #: {collector.member_number}</span>
@@ -186,7 +186,7 @@ const CollectorRolesList = () => {
                         <TableCell>
                           <Badge 
                             variant="outline"
-                            className="bg-dashboard-accent1/10 text-dashboard-softBlue border-dashboard-accent1/20"
+                            className="bg-dashboard-softBlue/10 text-dashboard-softBlue border-dashboard-softBlue/20"
                           >
                             {roleDetail.role}
                           </Badge>
@@ -197,7 +197,7 @@ const CollectorRolesList = () => {
                         <TableCell>
                           <Badge 
                             variant="outline" 
-                            className="bg-dashboard-accent3/10 text-dashboard-softGreen border-dashboard-accent3/20"
+                            className="bg-dashboard-softGreen/10 text-dashboard-softGreen border-dashboard-softGreen/20"
                           >
                             Active
                           </Badge>
@@ -212,7 +212,7 @@ const CollectorRolesList = () => {
                   <AccordionItem value="roleAccess">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-dashboard-accent3" />
+                        <Activity className="h-5 w-5 text-dashboard-softGreen" />
                         <span className="text-dashboard-softBlue">Role Access Status</span>
                       </div>
                     </AccordionTrigger>
@@ -246,7 +246,7 @@ const CollectorRolesList = () => {
                   <AccordionItem value="enhancedAccess">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
-                        <Database className="h-5 w-5 text-dashboard-accent4" />
+                        <Database className="h-5 w-5 text-dashboard-softBlue" />
                         <span className="text-dashboard-softBlue">Enhanced Role Status</span>
                       </div>
                     </AccordionTrigger>
@@ -263,7 +263,7 @@ const CollectorRolesList = () => {
                               <Badge 
                                 key={role}
                                 variant="outline"
-                                className="mr-1"
+                                className="mr-1 text-dashboard-softBlue"
                               >
                                 {role}
                               </Badge>
@@ -278,7 +278,7 @@ const CollectorRolesList = () => {
                   <AccordionItem value="roleSync">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
-                        <RefreshCw className="h-5 w-5 text-dashboard-accent5" />
+                        <RefreshCw className="h-5 w-5 text-dashboard-softBlue" />
                         <span className="text-dashboard-softBlue">Role Sync Status</span>
                       </div>
                     </AccordionTrigger>
@@ -298,7 +298,7 @@ const CollectorRolesList = () => {
                   <AccordionItem value="roleStore">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
-                        <HardDrive className="h-5 w-5 text-dashboard-accent6" />
+                        <HardDrive className="h-5 w-5 text-dashboard-softBlue" />
                         <span className="text-dashboard-softBlue">Role Store Status</span>
                       </div>
                     </AccordionTrigger>
