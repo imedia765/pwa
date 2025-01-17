@@ -1,10 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { Database } from "@/integrations/supabase/types";
-
-type UserRole = Database['public']['Enums']['app_role'];
 
 interface CollectorRoleStatusProps {
-  roles: UserRole[];
+  roles: string[];
 }
 
 export const CollectorRoleStatus = ({ roles }: CollectorRoleStatusProps) => {

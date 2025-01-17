@@ -4,14 +4,11 @@ import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CollectorRoleAssignment } from './roles/CollectorRoleAssignment';
 import { CollectorRoleStatus } from './roles/CollectorRoleStatus';
-import { Database } from "@/integrations/supabase/types";
-
-type UserRole = Database['public']['Enums']['app_role'];
 
 interface CollectorInfo {
   full_name: string;
   member_number: string;
-  roles: UserRole[];
+  roles: string[];
   auth_user_id: string;
   id: string;
 }
@@ -40,7 +37,7 @@ const CollectorRolesList = () => {
 
             return {
               ...member,
-              roles: roles?.map(r => r.role as UserRole) || []
+              roles: roles?.map(r => r.role) || []
             };
           })
         );
