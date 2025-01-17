@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useEnhancedRoleAccess } from "@/hooks/useEnhancedRoleAccess";
@@ -144,61 +145,69 @@ const CollectorRolesList = () => {
   return (
     <div className="space-y-6 p-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-dashboard-highlight">Active Collectors and Roles</h2>
-        <Badge variant="outline" className="text-dashboard-muted">
+        <h2 className="text-2xl font-semibold text-dashboard-accent1">Active Collectors and Roles</h2>
+        <Badge variant="outline" className="text-dashboard-accent1">
           {collectors?.length || 0} Collectors
         </Badge>
       </div>
 
       <div className="grid gap-6">
         {collectors?.map((collector) => (
-          <Card key={collector.member_number} className="p-6 bg-dashboard-card border-dashboard-cardBorder">
-            <div className="space-y-4">
-              {/* Header Section */}
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-dashboard-accent1" />
-                    <h3 className="text-lg font-medium text-dashboard-text">{collector.full_name}</h3>
-                  </div>
-                  <p className="text-sm text-dashboard-muted">Member #: {collector.member_number}</p>
-                  <p className="text-xs text-dashboard-muted font-mono">ID: {collector.auth_user_id}</p>
-                </div>
-              </div>
-
-              <Separator className="bg-dashboard-cardBorder" />
-
-              <Accordion type="single" collapsible className="w-full">
-                {/* Basic Role Information */}
-                <AccordionItem value="roles">
-                  <AccordionTrigger className="hover:no-underline">
+          <Card key={collector.member_number} className="overflow-hidden">
+            <div className="p-6 bg-dashboard-card border-dashboard-cardBorder">
+              <div className="space-y-4">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-dashboard-accent2" />
-                      <span>Role Information</span>
+                      <User className="h-5 w-5 text-dashboard-accent1" />
+                      <h3 className="text-lg font-medium text-white">{collector.full_name}</h3>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2">
-                      {collector.role_details.map((roleDetail, index) => (
-                        <div 
-                          key={`${roleDetail.role}-${index}`}
-                          className="flex items-center justify-between bg-dashboard-card/50 rounded-md p-2"
-                        >
+                    <div className="flex flex-col space-y-1 text-dashboard-muted">
+                      <span>Member #: {collector.member_number}</span>
+                      <span className="font-mono text-xs">ID: {collector.auth_user_id}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="bg-dashboard-cardBorder" />
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-dashboard-accent1">Role</TableHead>
+                      <TableHead className="text-dashboard-accent1">Assigned Date</TableHead>
+                      <TableHead className="text-dashboard-accent1">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {collector.role_details.map((roleDetail, index) => (
+                      <TableRow key={`${roleDetail.role}-${index}`}>
+                        <TableCell>
                           <Badge 
                             variant="outline"
                             className="bg-dashboard-accent1/10 text-dashboard-accent1 border-dashboard-accent1/20"
                           >
                             {roleDetail.role}
                           </Badge>
-                          <span className="text-xs text-dashboard-muted">
-                            Added: {format(new Date(roleDetail.created_at), 'PPp')}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                        </TableCell>
+                        <TableCell className="text-dashboard-text">
+                          {format(new Date(roleDetail.created_at), 'PPp')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline" 
+                            className="bg-dashboard-accent3/10 text-dashboard-accent3 border-dashboard-accent3/20"
+                          >
+                            Active
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
 
+                <Accordion type="single" collapsible className="w-full">
                 {/* useRoleAccess Status */}
                 <AccordionItem value="roleAccess">
                   <AccordionTrigger className="hover:no-underline">
@@ -308,7 +317,8 @@ const CollectorRolesList = () => {
                     </div>
                   </AccordionContent>
                 </AccordionItem>
-              </Accordion>
+                </Accordion>
+              </div>
             </div>
           </Card>
         ))}
