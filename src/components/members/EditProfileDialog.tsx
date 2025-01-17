@@ -69,7 +69,7 @@ const EditProfileDialog = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: member.full_name || "",
-      date_of_birth: member.date_of_birth ? formatDate(member.date_of_birth) : "",
+      date_of_birth: member.date_of_birth || "",
       email: member.email || "",
       phone: member.phone || "",
       address: member.address || "",
@@ -120,29 +120,29 @@ const EditProfileDialog = ({
           <DialogTitle className="text-2xl font-semibold text-dashboard-accent1">Edit Profile</DialogTitle>
         </DialogHeader>
 
-        {/* Member Status Section */}
-        <div className="p-4 rounded-lg bg-dashboard-cardHover border border-dashboard-cardBorder">
-          <div className="space-y-3">
+        {/* Member Status Section with enhanced styling */}
+        <div className="p-6 rounded-lg bg-dashboard-cardHover/50 border border-dashboard-cardBorder shadow-sm">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-dashboard-accent1">Status</span>
+              <span className="text-dashboard-muted">Status</span>
               <span className="text-dashboard-accent1 font-medium">{member.status}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-dashboard-accent1">Collector</span>
+              <span className="text-dashboard-muted">Collector</span>
               <span className="text-dashboard-accent1 font-medium">{member.collector}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-dashboard-accent1">Member Number</span>
-              <span className="text-dashboard-accent1 font-medium">{member.member_number}</span>
+              <span className="text-dashboard-muted">Member Number</span>
+              <span className="text-xl font-bold text-[#9b87f5]">{member.member_number}</span>
             </div>
           </div>
         </div>
 
-        <Separator className="my-4 bg-dashboard-cardBorder" />
+        <Separator className="my-6 bg-dashboard-cardBorder" />
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="full_name"
@@ -163,7 +163,12 @@ const EditProfileDialog = ({
                   <FormItem>
                     <FormLabel className="text-dashboard-text">Date of Birth</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" />
+                      <Input 
+                        {...field} 
+                        type="date" 
+                        value={field.value || ''}
+                        className="bg-dashboard-dark border-dashboard-cardBorder text-dashboard-text focus:border-dashboard-accent1" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -240,14 +245,14 @@ const EditProfileDialog = ({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="bg-dashboard-dark text-dashboard-text hover:bg-dashboard-cardHover hover:text-white border-dashboard-cardBorder"
+                className="bg-dashboard-dark hover:bg-dashboard-cardHover hover:text-white border-dashboard-cardBorder transition-all duration-200"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-dashboard-accent1 text-white hover:bg-dashboard-accent1/80"
+                className="bg-[#9b87f5] text-white hover:bg-[#7E69AB] transition-all duration-200"
               >
                 {isSubmitting ? "Saving..." : "Save changes"}
               </Button>

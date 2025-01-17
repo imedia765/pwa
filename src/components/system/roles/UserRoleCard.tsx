@@ -1,265 +1,189 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import RoleSelect from './RoleSelect';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, ChevronDown, ChevronUp, Shield, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Database } from '@/integrations/supabase/types';
-import { Badge } from '@/components/ui/badge';
+import { supabase } from "@/integrations/supabase/client";
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { DatabaseEnums } from "@/integrations/supabase/types/enums";
+import DiagnosticsPanel from './diagnostics/DiagnosticsPanel';
 
-type UserRole = Database['public']['Enums']['app_role'];
+type UserRole = DatabaseEnums['app_role'];
 
-interface UserRoleCardProps {
-  user: {
-    id: string;
-    user_id: string;
-    full_name: string;
-    member_number: string;
-    role: UserRole;
-    auth_user_id: string;
-    user_roles: { role: UserRole }[];
-  };
-  onRoleChange: (userId: string, newRole: UserRole) => void;
+interface UserRoleData {
+  role: UserRole;
 }
 
-interface AuthDebugInfo {
-  lastSignIn?: string;
-  lastFailedAttempt?: string;
-  sessionStatus: 'active' | 'expired' | 'none';
-  authErrors: string[];
-  roleIssues: {
-    type: string;
-    description: string;
-  }[];
-  permissionIssues: {
-    type: string;
-    description: string;
-  }[];
+interface UserData {
+  id: string;
+  user_id: string;
+  full_name: string;
+  member_number: string;
+  role: UserRole;
+  auth_user_id: string;
+  user_roles: UserRoleData[];
+}
+
+interface UserRoleCardProps {
+  user: UserData;
+  onRoleChange: (userId: string, newRole: UserRole) => Promise<void>;
 }
 
 const UserRoleCard = ({ user, onRoleChange }: UserRoleCardProps) => {
-  const [showDebug, setShowDebug] = useState(false);
+  const [showDiagnosis, setShowDiagnosis] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+  const { toast } = useToast();
 
-  // Fetch auth debug information
-  const { data: debugInfo } = useQuery({
-    queryKey: ['auth-debug', user.id],
-    queryFn: async (): Promise<AuthDebugInfo> => {
+  const addLog = (message: string) => {
+    setLogs(prev => [...prev, `[${new Date().toISOString()}] ${message}`]);
+  };
+
+  const { data: userDiagnostics, isLoading } = useQuery({
+    queryKey: ['userDiagnostics', user.id, showDiagnosis],
+    queryFn: async () => {
+      if (!showDiagnosis) return null;
+      
+      addLog('Starting user diagnostics...');
+      
       try {
-        // Fetch audit logs
-        const { data: auditLogs } = await supabase
-          .from('audit_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('table_name', 'auth')
-          .order('timestamp', { ascending: false })
-          .limit(5);
-
-        // Check session status
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // Get role-related issues
-        const { data: roleData } = await supabase
+        // Fetch user roles
+        const { data: roles, error: rolesError } = await supabase
           .from('user_roles')
           .select('*')
           .eq('user_id', user.auth_user_id);
 
-        const roleIssues: { type: string; description: string; }[] = [];
-        const permissionIssues: { type: string; description: string; }[] = [];
-
-        // Check for role mismatches
-        if (roleData) {
-          const assignedRoles = roleData.map(r => r.role);
-          if (assignedRoles.length === 0) {
-            roleIssues.push({
-              type: 'No Role',
-              description: 'User has no assigned roles'
-            });
-          }
-          if (assignedRoles.length > 1) {
-            roleIssues.push({
-              type: 'Multiple Roles',
-              description: `User has multiple roles: ${assignedRoles.join(', ')}`
-            });
-          }
-          if (user.role && !assignedRoles.includes(user.role)) {
-            roleIssues.push({
-              type: 'Role Mismatch',
-              description: `Display role (${user.role}) doesn't match assigned roles`
-            });
-          }
+        if (rolesError) {
+          addLog(`Error fetching roles: ${rolesError.message}`);
+          throw rolesError;
         }
+        addLog(`Found ${roles?.length || 0} roles`);
 
-        // Check for permission issues
-        const { data: memberData } = await supabase
+        // Fetch member profile
+        const { data: member, error: memberError } = await supabase
           .from('members')
           .select('*')
           .eq('auth_user_id', user.auth_user_id)
-          .single();
+          .maybeSingle();
 
-        if (!memberData) {
-          permissionIssues.push({
-            type: 'No Member Profile',
-            description: 'User has no associated member profile'
-          });
+        if (memberError && memberError.code !== 'PGRST116') {
+          addLog(`Error fetching member: ${memberError.message}`);
+          throw memberError;
         }
+        addLog(member ? 'Found member profile' : 'No member profile found');
 
-        const authErrors = (auditLogs || [])
-          .filter(log => log.severity === 'error')
-          .map(log => (typeof log.new_values === 'string' ? log.new_values : 'Unknown error'));
+        // Fetch collector info if exists
+        const { data: collector, error: collectorError } = await supabase
+          .from('members_collectors')
+          .select('*')
+          .eq('member_number', member?.member_number);
 
-        const lastSignIn = auditLogs?.find(log => 
-          log.operation === 'create' && !log.severity
-        )?.timestamp;
+        if (collectorError) {
+          addLog(`Error fetching collector info: ${collectorError.message}`);
+          throw collectorError;
+        }
+        addLog(`Found ${collector?.length || 0} collector records`);
 
-        const lastFailedAttempt = auditLogs?.find(log => 
-          log.severity === 'error'
-        )?.timestamp;
+        // Fetch audit logs
+        const { data: auditLogs, error: auditError } = await supabase
+          .from('audit_logs')
+          .select('*')
+          .eq('user_id', user.auth_user_id)
+          .order('timestamp', { ascending: false })
+          .limit(10);
+
+        if (auditError) {
+          addLog(`Error fetching audit logs: ${auditError.message}`);
+          throw auditError;
+        }
+        addLog(`Found ${auditLogs?.length || 0} audit logs`);
+
+        // Fetch payment records
+        const { data: payments, error: paymentsError } = await supabase
+          .from('payment_requests')
+          .select('*')
+          .eq('member_number', member?.member_number)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (paymentsError) {
+          addLog(`Error fetching payments: ${paymentsError.message}`);
+          throw paymentsError;
+        }
+        addLog(`Found ${payments?.length || 0} payment records`);
 
         return {
-          lastSignIn: lastSignIn ? new Date(lastSignIn).toLocaleString() : undefined,
-          lastFailedAttempt: lastFailedAttempt ? new Date(lastFailedAttempt).toLocaleString() : undefined,
-          sessionStatus: session ? 'active' : 'none',
-          authErrors,
-          roleIssues,
-          permissionIssues
+          roles: roles || [],
+          member: member || null,
+          collector: collector || [],
+          auditLogs: auditLogs || [],
+          payments: payments || [],
+          accessibleTables: [
+            'members',
+            'user_roles',
+            'payment_requests',
+            'members_collectors',
+            'audit_logs'
+          ],
+          permissions: {
+            canManageRoles: roles?.some(r => r.role === 'admin') || false,
+            canCollectPayments: (collector?.length || 0) > 0,
+            canAccessAuditLogs: roles?.some(r => r.role === 'admin') || false,
+            canManageMembers: roles?.some(r => ['admin', 'collector'].includes(r.role)) || false
+          },
+          routes: {
+            dashboard: true,
+            profile: true,
+            payments: true,
+            settings: roles?.some(r => r.role === 'admin') || false,
+            system: roles?.some(r => r.role === 'admin') || false,
+            audit: roles?.some(r => r.role === 'admin') || false
+          },
+          timestamp: new Date().toISOString()
         };
-      } catch (error) {
-        console.error('Error in debug info fetch:', error);
-        return {
-          sessionStatus: 'none',
-          authErrors: ['Error fetching debug information'],
-          roleIssues: [],
-          permissionIssues: []
-        };
+      } catch (error: any) {
+        console.error('Error in diagnostics:', error);
+        toast({
+          title: "Error running diagnostics",
+          description: error.message,
+          variant: "destructive",
+        });
+        return null;
       }
-    }
+    },
+    enabled: showDiagnosis
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between p-5 bg-dashboard-card/50 rounded-lg border border-dashboard-cardBorder hover:border-dashboard-cardBorderHover transition-all duration-200">
-        <div className="flex items-center space-x-4">
-          <div>
-            <p className="text-white font-medium">{user.full_name}</p>
-            <p className="text-dashboard-text text-sm">ID: {user.id}</p>
-          </div>
+    <Card className="p-4 bg-dashboard-card border-dashboard-cardBorder">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-medium text-white">{user.full_name}</h3>
         </div>
-        <div className="flex items-center space-x-4">
-          <RoleSelect 
-            currentRole={user.role} 
-            userId={user.user_id} 
-            onRoleChange={(newRole) => onRoleChange(user.user_id, newRole)} 
-          />
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="p-2 hover:bg-dashboard-cardHover rounded-full transition-colors"
-          >
-            {showDebug ? (
-              <ChevronUp className="h-5 w-5 text-dashboard-info" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-dashboard-info" />
-            )}
-          </button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[600px] bg-dashboard-card border-dashboard-cardBorder">
+            <DiagnosticsPanel
+              isLoading={isLoading}
+              userDiagnostics={userDiagnostics}
+              logs={logs}
+              onRunDiagnostics={() => {
+                setShowDiagnosis(true);
+                setLogs([]);
+              }}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-
-      {showDebug && debugInfo && (
-        <div className="px-5 py-4 bg-dashboard-card/30 rounded-lg border border-dashboard-cardBorder">
-          <h4 className="text-sm font-medium text-dashboard-accent1 mb-3">Debug Information</h4>
-          
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px] text-dashboard-accent2">Metric</TableHead>
-                <TableHead className="text-dashboard-accent2">Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="text-dashboard-text">Last Sign In</TableCell>
-                <TableCell className="text-white">{debugInfo.lastSignIn || 'Never'}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="text-dashboard-text">Session Status</TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                    debugInfo.sessionStatus === 'active' 
-                      ? 'bg-dashboard-success/20 text-dashboard-success' 
-                      : 'bg-dashboard-error/20 text-dashboard-error'
-                  }`}>
-                    {debugInfo.sessionStatus}
-                  </span>
-                </TableCell>
-              </TableRow>
-              {debugInfo.lastFailedAttempt && (
-                <TableRow>
-                  <TableCell className="text-dashboard-text">Last Failed Attempt</TableCell>
-                  <TableCell className="text-dashboard-error">{debugInfo.lastFailedAttempt}</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {/* Role Issues Section */}
-          {debugInfo.roleIssues && debugInfo.roleIssues.length > 0 && (
-            <div className="mt-4">
-              <Alert variant="destructive" className="bg-yellow-500/10 border-yellow-500/20">
-                <Shield className="h-4 w-4 text-yellow-500" />
-                <AlertTitle className="text-yellow-500">Role Issues Detected</AlertTitle>
-                <AlertDescription>
-                  <ul className="list-disc list-inside space-y-1 mt-2">
-                    {debugInfo.roleIssues.map((issue, index) => (
-                      <li key={index} className="text-sm">
-                        <Badge variant="outline" className="mr-2">{issue.type}</Badge>
-                        {issue.description}
-                      </li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          {/* Permission Issues Section */}
-          {debugInfo.permissionIssues && debugInfo.permissionIssues.length > 0 && (
-            <div className="mt-4">
-              <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-                <AlertTitle className="text-red-500">Permission Issues Detected</AlertTitle>
-                <AlertDescription>
-                  <ul className="list-disc list-inside space-y-1 mt-2">
-                    {debugInfo.permissionIssues.map((issue, index) => (
-                      <li key={index} className="text-sm">
-                        <Badge variant="outline" className="mr-2">{issue.type}</Badge>
-                        {issue.description}
-                      </li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          {/* Auth Errors Section */}
-          {debugInfo.authErrors && debugInfo.authErrors.length > 0 && (
-            <div className="mt-4">
-              <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <div className="text-sm font-medium mb-2">Recent Auth Errors</div>
-                  <ul className="list-disc list-inside space-y-1">
-                    {debugInfo.authErrors.map((error, index) => (
-                      <li key={index} className="text-sm">{error}</li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    </Card>
   );
 };
 
