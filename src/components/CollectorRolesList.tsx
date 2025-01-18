@@ -18,6 +18,9 @@ import { useEnhancedRoleAccess } from "@/hooks/useEnhancedRoleAccess";
 import { useRoleSync } from "@/hooks/useRoleSync";
 import { RoleAssignment } from './collectors/roles/RoleAssignment';
 import { PermissionsDisplay } from './collectors/roles/PermissionsDisplay';
+import { Database } from "@/integrations/supabase/types";
+
+type UserRole = Database['public']['Enums']['app_role'];
 
 interface CollectorInfo {
   full_name: string;
