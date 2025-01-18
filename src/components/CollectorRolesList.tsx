@@ -64,93 +64,93 @@ const CollectorRolesList = () => {
   const { userRoles: enhancedRoles, isLoading: enhancedLoading } = useEnhancedRoleAccess();
   const { syncStatus, syncRoles } = useRoleSync();
 
-  const { data: collectors = [], isLoading, error } = useQuery({
-    queryKey: ['collectors-roles'],
-    queryFn: async () => {
-      console.log('Fetching collectors and roles data...');
-      
-      try {
-        const { data: activeCollectors, error: collectorsError } = await supabase
-          .from('members_collectors')
-          .select('member_number, name, email, phone, prefix, number')
-          .eq('active', true);
+const { data: collectors = [], isLoading, error } = useQuery({
+  queryKey: ['collectors-roles'],
+  queryFn: async () => {
+    console.log('Fetching collectors and roles data...');
+    
+    try {
+      const { data: activeCollectors, error: collectorsError } = await supabase
+        .from('members_collectors')
+        .select('member_number, name, email, phone, prefix, number')
+        .eq('active', true);
 
-        if (collectorsError) throw collectorsError;
+      if (collectorsError) throw collectorsError;
 
-        const collectorsWithRoles = await Promise.all(
-          (activeCollectors || []).map(async (collector) => {
-            const { data: memberData, error: memberError } = await supabase
-              .from('members')
-              .select('full_name, member_number, auth_user_id')
-              .eq('member_number', collector.member_number)
-              .maybeSingle();
+      const collectorsWithRoles = await Promise.all(
+        (activeCollectors || []).map(async (collector) => {
+          const { data: memberData, error: memberError } = await supabase
+            .from('members')
+            .select('full_name, member_number, auth_user_id')
+            .eq('member_number', collector.member_number)
+            .maybeSingle();
 
-            if (memberError) throw memberError;
-            if (!memberData) return null;
+          if (memberError) throw memberError;
+          if (!memberData) return null;
 
-            const { data: roles, error: rolesError } = await supabase
-              .from('user_roles')
-              .select('role, created_at')
-              .eq('user_id', memberData.auth_user_id)
-              .order('created_at', { ascending: true });
+          const { data: roles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role, created_at')
+            .eq('user_id', memberData.auth_user_id)
+            .order('created_at', { ascending: true });
 
-            if (rolesError) throw rolesError;
+          if (rolesError) throw rolesError;
 
-            const { data: enhancedRoles, error: enhancedError } = await supabase
-              .from('enhanced_roles')
-              .select('role_name, is_active')
-              .eq('user_id', memberData.auth_user_id);
+          // Validate and type-cast roles
+          const typedRoles = (roles || [])
+            .map(r => r.role)
+            .filter(isValidRole);
 
-            if (enhancedError) throw enhancedError;
+          const typedRoleDetails = (roles || [])
+            .filter(r => isValidRole(r.role))
+            .map(r => ({
+              role: r.role as UserRole,
+              created_at: r.created_at
+            }));
 
-            const { data: syncStatus, error: syncError } = await supabase
-              .from('sync_status')
-              .select('*')
-              .eq('user_id', memberData.auth_user_id)
-              .maybeSingle();
+          const { data: enhancedRoles, error: enhancedError } = await supabase
+            .from('enhanced_roles')
+            .select('role_name, is_active')
+            .eq('user_id', memberData.auth_user_id);
 
-            if (syncError) throw syncError;
+          if (enhancedError) throw enhancedError;
 
-            // Validate and type-cast roles
-            const typedRoles = (roles || [])
-              .map(r => r.role)
-              .filter(isValidRole);
+          const { data: syncStatus, error: syncError } = await supabase
+            .from('sync_status')
+            .select('*')
+            .eq('user_id', memberData.auth_user_id)
+            .maybeSingle();
 
-            const typedRoleDetails = (roles || [])
-              .filter(r => isValidRole(r.role))
-              .map(r => ({
-                role: r.role as UserRole,
-                created_at: r.created_at
-              }));
+          if (syncError) throw syncError;
 
-            const collectorInfo: CollectorInfo = {
-              ...memberData,
-              roles: typedRoles,
-              role_details: typedRoleDetails,
-              email: collector.email,
-              phone: collector.phone,
-              prefix: collector.prefix,
-              number: collector.number,
-              enhanced_roles: enhancedRoles || [],
-              sync_status: syncStatus || undefined
-            };
+          const collectorInfo: CollectorInfo = {
+            ...memberData,
+            roles: typedRoles,
+            role_details: typedRoleDetails,
+            email: collector.email,
+            phone: collector.phone,
+            prefix: collector.prefix,
+            number: collector.number,
+            enhanced_roles: enhancedRoles || [],
+            sync_status: syncStatus || undefined
+          };
 
-            return collectorInfo;
-          })
-        );
+          return collectorInfo;
+        })
+      );
 
-        return collectorsWithRoles.filter((c): c is CollectorInfo => c !== null);
-      } catch (err) {
-        console.error('Error in collector roles query:', err);
-        toast({
-          title: "Error loading collectors",
-          description: "There was a problem loading the collectors list",
-          variant: "destructive",
-        });
-        throw err;
-      }
+      return collectorsWithRoles.filter((c): c is CollectorInfo => c !== null);
+    } catch (err) {
+      console.error('Error in collector roles query:', err);
+      toast({
+        title: "Error loading collectors",
+        description: "There was a problem loading the collectors list",
+        variant: "destructive",
+      });
+      throw err;
     }
-  });
+  }
+});
 
   const handleRoleChange = async (userId: string, role: UserRole, action: 'add' | 'remove') => {
     try {
@@ -328,5 +328,3 @@ const CollectorRolesList = () => {
     </div>
   );
 };
-
-export default CollectorRolesList;
