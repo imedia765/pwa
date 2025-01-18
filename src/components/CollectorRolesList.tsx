@@ -107,7 +107,7 @@ const CollectorRolesList = () => {
 
             if (syncError) throw syncError;
 
-            // Explicitly type-cast roles to UserRole
+            // Explicitly ensure roles are of type UserRole
             const typedRoles = (roles || []).map(r => r.role as UserRole);
             const typedRoleDetails = (roles || []).map(r => ({
               role: r.role as UserRole,
