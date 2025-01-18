@@ -926,7 +926,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "collector" | "member"
-      audit_operation: "create" | "update" | "delete"
+      audit_operation:
+        | "create"
+        | "update"
+        | "delete"
+        | "INSERT"
+        | "UPDATE"
+        | "DELETE"
       backup_operation_type: "backup" | "restore"
       monitoring_event_type:
         | "system_performance"
