@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertCircle, User, Shield, Clock, Check, XCircle } from "lucide-react";
+import { Loader2, AlertCircle, User } from "lucide-react";
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -16,7 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useEnhancedRoleAccess } from "@/hooks/useEnhancedRoleAccess";
 import { useRoleSync } from "@/hooks/useRoleSync";
-import { useRoleStore } from "@/store/roleStore";
+import { RoleAssignment } from './collectors/roles/RoleAssignment';
+import { PermissionsDisplay } from './collectors/roles/PermissionsDisplay';
 
 interface CollectorInfo {
   full_name: string;
@@ -38,7 +39,6 @@ const CollectorRolesList = () => {
   const { userRole, userRoles, roleLoading, error: roleError, permissions } = useRoleAccess();
   const { userRoles: enhancedRoles, isLoading: enhancedLoading } = useEnhancedRoleAccess();
   const { syncStatus, syncRoles } = useRoleSync();
-  const roleStore = useRoleStore();
 
   const { data: collectors, isLoading, error } = useQuery({
     queryKey: ['collectors-roles'],
@@ -160,6 +160,35 @@ const CollectorRolesList = () => {
     }
   });
 
+  const handleRoleChange = async (userId: string, role: UserRole, action: 'add' | 'remove') => {
+    try {
+      if (action === 'add') {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: userId, role });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId)
+          .eq('role', role);
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Role updated",
+        description: `Successfully ${action}ed ${role} role`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error updating role",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (error || roleError) {
     return (
       <div className="flex items-center justify-center p-4 text-red-500">
@@ -195,9 +224,6 @@ const CollectorRolesList = () => {
               <TableHead className="text-[#F2FCE2]">Contact Info</TableHead>
               <TableHead className="text-[#F2FCE2]">Roles & Access</TableHead>
               <TableHead className="text-[#F2FCE2]">Role History</TableHead>
-              <TableHead className="text-[#F2FCE2]">Enhanced Role Status</TableHead>
-              <TableHead className="text-[#F2FCE2]">Role Store Status</TableHead>
-              <TableHead className="text-[#F2FCE2]">Sync Status</TableHead>
               <TableHead className="text-[#F2FCE2]">Permissions</TableHead>
             </TableRow>
           </TableHeader>
@@ -226,22 +252,11 @@ const CollectorRolesList = () => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-1 flex-wrap">
-                      {collector.roles.map((role, idx) => (
-                        <Badge 
-                          key={`${role}-${idx}`}
-                          variant="outline"
-                          className="bg-[#9B87F5] text-white border-0"
-                        >
-                          {role}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="text-sm text-[#9B87F5]">
-                      Current Role: {userRole || 'Loading...'}
-                    </div>
-                  </div>
+                  <RoleAssignment
+                    currentRoles={collector.roles}
+                    onRoleChange={(role, action) => handleRoleChange(collector.auth_user_id, role, action)}
+                    isLoading={roleLoading}
+                  />
                 </TableCell>
                 <TableCell className="text-[#F1F0FB]">
                   <div className="flex flex-col gap-1">
@@ -253,68 +268,7 @@ const CollectorRolesList = () => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-2">
-                    {collector.enhanced_roles?.map((role, idx) => (
-                      <Badge 
-                        key={idx}
-                        variant="outline"
-                        className={`${
-                          role.is_active 
-                            ? 'bg-[#7EBF8E] text-white' 
-                            : 'bg-[#8E9196] text-white'
-                        } border-0`}
-                      >
-                        {role.role_name}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-2">
-                    <div className="text-sm">
-                      <span className="text-[#9B87F5]">Store Status: </span>
-                      <Badge variant="outline" className={`
-                        ${collector.sync_status?.store_status === 'ready' 
-                          ? 'bg-[#7EBF8E]' 
-                          : 'bg-[#8E9196]'
-                        } text-white border-0`}
-                      >
-                        {collector.sync_status?.store_status || 'N/A'}
-                      </Badge>
-                    </div>
-                    {collector.sync_status?.store_error && (
-                      <div className="text-sm text-red-400">
-                        Error: {collector.sync_status.store_error}
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {collector.sync_status?.status === 'completed' ? (
-                      <Check className="h-4 w-4 text-[#7EBF8E]" />
-                    ) : collector.sync_status?.status === 'pending' ? (
-                      <Clock className="h-4 w-4 text-[#FFD700]" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-400" />
-                    )}
-                    <span className="text-sm">
-                      {collector.sync_status?.status || 'N/A'}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-1 text-sm">
-                    {permissions && Object.entries(permissions).map(([key, value]) => (
-                      <Badge 
-                        key={key}
-                        variant="outline" 
-                        className={value ? 'bg-[#7EBF8E] text-white border-0' : 'bg-[#8E9196] text-white border-0'}
-                      >
-                        {key}
-                      </Badge>
-                    ))}
-                  </div>
+                  <PermissionsDisplay permissions={permissions} />
                 </TableCell>
               </TableRow>
             ))}
