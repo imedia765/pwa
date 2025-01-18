@@ -107,13 +107,17 @@ const CollectorRolesList = () => {
 
             if (syncError) throw syncError;
 
+            // Explicitly type-cast roles to UserRole
+            const typedRoles = roles?.map(r => r.role as UserRole) || [];
+            const typedRoleDetails = roles?.map(r => ({
+              role: r.role as UserRole,
+              created_at: r.created_at
+            })) || [];
+
             return {
               ...memberData,
-              roles: roles?.map(r => r.role as UserRole) || [],
-              role_details: roles?.map(r => ({
-                role: r.role as UserRole,
-                created_at: r.created_at
-              })) || [],
+              roles: typedRoles,
+              role_details: typedRoleDetails,
               email: collector.email,
               phone: collector.phone,
               prefix: collector.prefix,
