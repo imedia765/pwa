@@ -8,6 +8,9 @@ import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentStatus } from '../financials/payment-card/PaymentStatus';
+import { differenceInDays } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 
 interface MemberCardProps {
   member: Member;
@@ -20,6 +23,46 @@ const MemberCard = ({ member, userRole, onPaymentClick, onEditClick }: MemberCar
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [note, setNote] = useState(member.admin_note || '');
   const { toast } = useToast();
+
+  const { data: paymentRequest } = useQuery({
+    queryKey: ['payment_request', member.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_requests')
+        .select('*')
+        .eq('member_id', member.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+  });
+
+  const getPaymentStatus = () => {
+    if (!member.yearly_payment_due_date) return null;
+    
+    const dueDate = new Date(member.yearly_payment_due_date);
+    const today = new Date();
+    const daysUntilDue = differenceInDays(dueDate, today);
+
+    // If there's a completed payment
+    if (paymentRequest?.status === 'approved') {
+      return 'completed';
+    }
+    
+    // If there's a pending payment in the payment_requests table
+    if (paymentRequest?.status === 'pending') {
+      return 'pending';
+    }
+    
+    // If payment is overdue
+    if (daysUntilDue < 0) {
+      return 'overdue';
+    }
+
+    return null;
+  };
 
   const handleSaveNote = async () => {
     try {
@@ -45,6 +88,8 @@ const MemberCard = ({ member, userRole, onPaymentClick, onEditClick }: MemberCar
     }
   };
 
+  const status = getPaymentStatus();
+
   return (
     <AccordionItem 
       key={member.id} 
@@ -63,10 +108,13 @@ const MemberCard = ({ member, userRole, onPaymentClick, onEditClick }: MemberCar
             <div className="flex items-center gap-2">
               <div>
                 <h3 className="text-xl font-medium text-dashboard-accent2 mb-1">{member.full_name}</h3>
-                <p className="bg-dashboard-accent1/10 px-3 py-1 rounded-full inline-flex items-center">
-                  <span className="text-dashboard-accent1">Member #</span>
-                  <span className="text-dashboard-accent2 font-medium ml-1">{member.member_number}</span>
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="bg-dashboard-accent1/10 px-3 py-1 rounded-full inline-flex items-center">
+                    <span className="text-dashboard-accent1">Member #</span>
+                    <span className="text-dashboard-accent2 font-medium ml-1">{member.member_number}</span>
+                  </p>
+                  {status && <PaymentStatus status={status} />}
+                </div>
               </div>
               {member.admin_note && (
                 <FileText className="w-4 h-4 text-dashboard-accent3" />

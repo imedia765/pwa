@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Member } from "@/types/member";
+import { Collector } from "@/types/collector"; // Add this import
 import ProfileHeader from "./profile/ProfileHeader";
 import ProfileAvatar from "./profile/ProfileAvatar";
 import ContactInfo from "./profile/ContactInfo";
@@ -36,12 +37,12 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
       
       const { data, error } = await supabase
         .from('members_collectors')
-        .select('id, name, phone, prefix, number, email, active, created_at, updated_at')
+        .select('id, name, phone, prefix, number, email, active, created_at, updated_at, member_number')
         .eq('name', memberProfile.collector)
-        .single();
+        .maybeSingle();
         
       if (error) throw error;
-      return data;
+      return data as Collector;
     },
     enabled: !!memberProfile?.collector
   });

@@ -4,7 +4,7 @@ import { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import RoleManagementHeader from './RoleManagementHeader';
 import { useRoleManagementData } from './hooks/useRoleManagementData';
-import { RoleManagementContent } from './components/RoleManagementContent';
+import RoleManagementContent from './components/RoleManagementContent';
 
 type UserRole = Database['public']['Enums']['app_role'];
 
@@ -56,6 +56,7 @@ const RoleManagementList = ({ searchTerm, onDebugLog }: RoleManagementListProps)
         users={users}
         isLoading={isLoading}
         page={page}
+        searchTerm={searchTerm}
         handleScroll={handleScroll}
         handleRoleChange={handleRoleChange}
       />

@@ -126,6 +126,36 @@ export type Database = {
         }
         Relationships: []
       }
+      enhanced_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_updated_at: string | null
+          role_name: string
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated_at?: string | null
+          role_name: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated_at?: string | null
+          role_name?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       family_members: {
         Row: {
           created_at: string
@@ -523,6 +553,104 @@ export type Database = {
             referencedColumns: ["member_number"]
           },
         ]
+      }
+      permission_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          permissions: Json
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          permissions?: Json
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          permissions?: Json
+        }
+        Relationships: []
+      }
+      role_history: {
+        Row: {
+          change_type: string | null
+          changed_by_user_id: string | null
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          role_id: string | null
+        }
+        Insert: {
+          change_type?: string | null
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          role_id?: string | null
+        }
+        Update: {
+          change_type?: string | null
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          role_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_history_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_status: {
+        Row: {
+          error_message: string | null
+          id: string
+          last_attempted_sync_at: string | null
+          status: string | null
+          store_error: string | null
+          store_status: string | null
+          sync_started_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          last_attempted_sync_at?: string | null
+          status?: string | null
+          store_error?: string | null
+          store_status?: string | null
+          sync_started_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          last_attempted_sync_at?: string | null
+          status?: string | null
+          store_error?: string | null
+          store_status?: string | null
+          sync_started_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       system_announcements: {
         Row: {

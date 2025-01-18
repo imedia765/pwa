@@ -76,7 +76,7 @@ const SidePanel = ({ onTabChange }: SidePanelProps) => {
       case 'users':
         return hasRole('admin') || hasRole('collector');
       case 'financials':
-        return hasRole('admin') || hasRole('collector');
+        return hasRole('admin'); // Only show financials for admin
       case 'system':
         return hasRole('admin');
       default:
@@ -101,7 +101,7 @@ const SidePanel = ({ onTabChange }: SidePanelProps) => {
       name: 'Collectors & Financials',
       icon: Wallet,
       tab: 'financials',
-      requiresRole: ['admin', 'collector'] as UserRole[]
+      requiresRole: ['admin'] as UserRole[] // Only show for admin
     },
     {
       name: 'System',
