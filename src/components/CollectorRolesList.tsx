@@ -54,6 +54,10 @@ interface CollectorInfo {
   sync_status?: SyncStatus;
 }
 
+const isValidRole = (role: string): role is UserRole => {
+  return ['admin', 'collector', 'member'].includes(role);
+};
+
 const CollectorRolesList = () => {
   const { toast } = useToast();
   const { userRole, userRoles, roleLoading, error: roleError, permissions } = useRoleAccess();
@@ -107,12 +111,17 @@ const CollectorRolesList = () => {
 
             if (syncError) throw syncError;
 
-            // Explicitly ensure roles are of type UserRole
-            const typedRoles = (roles || []).map(r => r.role as UserRole);
-            const typedRoleDetails = (roles || []).map(r => ({
-              role: r.role as UserRole,
-              created_at: r.created_at
-            }));
+            // Validate and type-cast roles
+            const typedRoles = (roles || [])
+              .map(r => r.role)
+              .filter(isValidRole);
+
+            const typedRoleDetails = (roles || [])
+              .filter(r => isValidRole(r.role))
+              .map(r => ({
+                role: r.role as UserRole,
+                created_at: r.created_at
+              }));
 
             const collectorInfo: CollectorInfo = {
               ...memberData,
