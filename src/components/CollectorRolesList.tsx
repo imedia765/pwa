@@ -14,9 +14,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { useEnhancedRoleAccess } from "@/hooks/useEnhancedRoleAccess";
-import { useRoleSync } from "@/hooks/useRoleSync";
+import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useEnhancedRoleAccess } from '@/hooks/useEnhancedRoleAccess';
+import { useRoleSync } from '@/hooks/useRoleSync';
 import { RoleAssignment } from './collectors/roles/RoleAssignment';
 import { PermissionsDisplay } from './collectors/roles/PermissionsDisplay';
 import { Database } from "@/integrations/supabase/types";
@@ -26,10 +26,10 @@ type UserRole = Database['public']['Enums']['app_role'];
 interface CollectorInfo {
   full_name: string;
   member_number: string;
-  roles: string[];
+  roles: UserRole[];
   auth_user_id: string;
   role_details: {
-    role: string;
+    role: UserRole;
     created_at: string;
   }[];
   email: string | null;
@@ -54,7 +54,7 @@ const CollectorRolesList = () => {
   const { userRoles: enhancedRoles, isLoading: enhancedLoading } = useEnhancedRoleAccess();
   const { syncStatus, syncRoles } = useRoleSync();
 
-  const { data: collectors, isLoading, error } = useQuery({
+  const { data: collectors = [], isLoading, error } = useQuery({
     queryKey: ['collectors-roles'],
     queryFn: async () => {
       console.log('Fetching collectors and roles data...');
@@ -68,7 +68,7 @@ const CollectorRolesList = () => {
         if (collectorsError) throw collectorsError;
 
         const collectorsWithRoles = await Promise.all(
-          activeCollectors.map(async (collector) => {
+          (activeCollectors || []).map(async (collector) => {
             const { data: memberData, error: memberError } = await supabase
               .from('members')
               .select('full_name, member_number, auth_user_id')
@@ -103,9 +103,9 @@ const CollectorRolesList = () => {
 
             return {
               ...memberData,
-              roles: roles?.map(r => r.role) || [],
+              roles: roles?.map(r => r.role as UserRole) || [],
               role_details: roles?.map(r => ({
-                role: r.role,
+                role: r.role as UserRole,
                 created_at: r.created_at
               })) || [],
               email: collector.email,
@@ -162,7 +162,7 @@ const CollectorRolesList = () => {
 
   const handleSync = async (userId: string) => {
     try {
-      await syncRoles([]);
+      await syncRoles([userId]);
       toast({
         title: "Sync initiated",
         description: "Role synchronization process has started",
@@ -218,7 +218,7 @@ const CollectorRolesList = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {collectors?.map((collector) => (
+            {collectors.map((collector) => (
               <TableRow 
                 key={collector.member_number}
                 className="border-dashboard-cardBorder hover:bg-dashboard-card/50"
