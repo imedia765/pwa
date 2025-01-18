@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertCircle, User } from "lucide-react";
+import { Loader2, AlertCircle, User, Shield, RefreshCw } from "lucide-react";
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -35,6 +36,16 @@ interface CollectorInfo {
   phone: string | null;
   prefix: string | null;
   number: string | null;
+  enhanced_roles: {
+    role_name: string;
+    is_active: boolean;
+  }[];
+  sync_status?: {
+    status: string;
+    store_status?: string;
+    last_attempted_sync_at?: string;
+    store_error?: string | null;
+  };
 }
 
 const CollectorRolesList = () => {
@@ -54,70 +65,60 @@ const CollectorRolesList = () => {
           .select('member_number, name, email, phone, prefix, number')
           .eq('active', true);
 
-        if (collectorsError) {
-          console.error('Error fetching collectors:', collectorsError);
-          throw collectorsError;
-        }
-
-        console.log('Active collectors:', activeCollectors);
+        if (collectorsError) throw collectorsError;
 
         const collectorsWithRoles = await Promise.all(
           activeCollectors.map(async (collector) => {
-            try {
-              const { data: memberData, error: memberError } = await supabase
-                .from('members')
-                .select('full_name, member_number, auth_user_id')
-                .eq('member_number', collector.member_number)
-                .maybeSingle();
+            const { data: memberData, error: memberError } = await supabase
+              .from('members')
+              .select('full_name, member_number, auth_user_id')
+              .eq('member_number', collector.member_number)
+              .maybeSingle();
 
-              if (memberError) {
-                console.error('Error fetching member data:', memberError);
-                throw memberError;
-              }
+            if (memberError) throw memberError;
+            if (!memberData) return null;
 
-              if (!memberData) {
-                console.log(`No member found for collector ${collector.name}`);
-                return null;
-              }
+            const { data: roles, error: rolesError } = await supabase
+              .from('user_roles')
+              .select('role, created_at')
+              .eq('user_id', memberData.auth_user_id)
+              .order('created_at', { ascending: true });
 
-              const { data: roles, error: rolesError } = await supabase
-                .from('user_roles')
-                .select('role, created_at')
-                .eq('user_id', memberData.auth_user_id)
-                .order('created_at', { ascending: true });
+            if (rolesError) throw rolesError;
 
-              if (rolesError) {
-                console.error('Error fetching roles:', rolesError);
-                throw rolesError;
-              }
+            const { data: enhancedRoles, error: enhancedError } = await supabase
+              .from('enhanced_roles')
+              .select('role_name, is_active')
+              .eq('user_id', memberData.auth_user_id);
 
-              return {
-                ...memberData,
-                roles: roles?.map(r => r.role) || [],
-                role_details: roles?.map(r => ({
-                  role: r.role,
-                  created_at: r.created_at
-                })) || [],
-                email: collector.email,
-                phone: collector.phone,
-                prefix: collector.prefix,
-                number: collector.number
-              };
-            } catch (err) {
-              console.error('Error processing collector:', collector.member_number, err);
-              toast({
-                title: "Error loading collector data",
-                description: `Could not load data for collector ${collector.member_number}`,
-                variant: "destructive",
-              });
-              return null;
-            }
+            if (enhancedError) throw enhancedError;
+
+            const { data: syncStatus, error: syncError } = await supabase
+              .from('sync_status')
+              .select('*')
+              .eq('user_id', memberData.auth_user_id)
+              .maybeSingle();
+
+            if (syncError) throw syncError;
+
+            return {
+              ...memberData,
+              roles: roles?.map(r => r.role) || [],
+              role_details: roles?.map(r => ({
+                role: r.role,
+                created_at: r.created_at
+              })) || [],
+              email: collector.email,
+              phone: collector.phone,
+              prefix: collector.prefix,
+              number: collector.number,
+              enhanced_roles: enhancedRoles || [],
+              sync_status: syncStatus || undefined
+            };
           })
         );
 
-        const validCollectors = collectorsWithRoles.filter(c => c !== null);
-        console.log('Final collectors data:', validCollectors);
-        return validCollectors;
+        return collectorsWithRoles.filter((c): c is CollectorInfo => c !== null);
       } catch (err) {
         console.error('Error in collector roles query:', err);
         toast({
@@ -159,6 +160,22 @@ const CollectorRolesList = () => {
     }
   };
 
+  const handleSync = async (userId: string) => {
+    try {
+      await syncRoles([]);
+      toast({
+        title: "Sync initiated",
+        description: "Role synchronization process has started",
+      });
+    } catch (error) {
+      toast({
+        title: "Sync failed",
+        description: error instanceof Error ? error.message : "An error occurred during sync",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (error || roleError) {
     return (
       <div className="flex items-center justify-center p-4 text-red-500">
@@ -194,6 +211,9 @@ const CollectorRolesList = () => {
               <TableHead className="text-[#F2FCE2]">Contact Info</TableHead>
               <TableHead className="text-[#F2FCE2]">Roles & Access</TableHead>
               <TableHead className="text-[#F2FCE2]">Role History</TableHead>
+              <TableHead className="text-[#F2FCE2]">Enhanced Role Status</TableHead>
+              <TableHead className="text-[#F2FCE2]">Role Store Status</TableHead>
+              <TableHead className="text-[#F2FCE2]">Sync Status</TableHead>
               <TableHead className="text-[#F2FCE2]">Permissions</TableHead>
             </TableRow>
           </TableHeader>
@@ -231,10 +251,49 @@ const CollectorRolesList = () => {
                 <TableCell className="text-[#F1F0FB]">
                   <div className="flex flex-col gap-1">
                     {collector.role_details.map((detail, idx) => (
-                      <div key={idx} className="text-sm">
+                      <div key={idx} className="text-sm flex items-center gap-2">
+                        <Shield className="h-3 w-3" />
                         {detail.role}: {format(new Date(detail.created_at), 'PPp')}
                       </div>
                     ))}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {collector.enhanced_roles.map((role, idx) => (
+                      <Badge 
+                        key={idx}
+                        variant={role.is_active ? "default" : "secondary"}
+                        className="mr-1"
+                      >
+                        {role.role_name}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={collector.sync_status?.store_status === 'ready' ? 'default' : 'secondary'}>
+                    {collector.sync_status?.store_status || 'N/A'}
+                  </Badge>
+                  {collector.sync_status?.store_error && (
+                    <div className="text-sm text-red-500 mt-1">
+                      {collector.sync_status.store_error}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={collector.sync_status?.status === 'completed' ? 'default' : 'secondary'}>
+                      {collector.sync_status?.status || 'pending'}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSync(collector.auth_user_id)}
+                      className="ml-2"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                    </Button>
                   </div>
                 </TableCell>
                 <TableCell>
