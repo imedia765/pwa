@@ -58,7 +58,7 @@ const isValidRole = (role: string): role is UserRole => {
   return ['admin', 'collector', 'member'].includes(role);
 };
 
-const CollectorRolesList = () => {
+export const CollectorRolesList = () => {
   const { toast } = useToast();
   const { userRole, userRoles, roleLoading, error: roleError, permissions } = useRoleAccess();
   const { userRoles: enhancedRoles, isLoading: enhancedLoading } = useEnhancedRoleAccess();
@@ -328,3 +328,5 @@ const { data: collectors = [], isLoading, error } = useQuery({
     </div>
   );
 };
+
+export default CollectorRolesList;
