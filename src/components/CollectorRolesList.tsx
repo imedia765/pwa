@@ -23,6 +23,10 @@ import { Database } from "@/integrations/supabase/types";
 
 type UserRole = Database['public']['Enums']['app_role'];
 
+const isValidRole = (role: string): role is UserRole => {
+  return ['admin', 'collector', 'member'].includes(role);
+};
+
 interface SyncStatus {
   id: string;
   user_id: string;
@@ -53,10 +57,6 @@ interface CollectorInfo {
   }[];
   sync_status?: SyncStatus;
 }
-
-const isValidRole = (role: string): role is UserRole => {
-  return ['admin', 'collector', 'member'].includes(role);
-};
 
 export const CollectorRolesList = () => {
   const { toast } = useToast();
