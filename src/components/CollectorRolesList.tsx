@@ -23,6 +23,17 @@ import { Database } from "@/integrations/supabase/types";
 
 type UserRole = Database['public']['Enums']['app_role'];
 
+interface SyncStatus {
+  id: string;
+  user_id: string;
+  sync_started_at: string;
+  last_attempted_sync_at: string;
+  status: string;
+  error_message: string;
+  store_status: string;
+  store_error: string;
+}
+
 interface CollectorInfo {
   full_name: string;
   member_number: string;
@@ -40,12 +51,7 @@ interface CollectorInfo {
     role_name: string;
     is_active: boolean;
   }[];
-  sync_status?: {
-    status: string;
-    store_status?: string;
-    last_attempted_sync_at?: string;
-    store_error?: string | null;
-  };
+  sync_status?: SyncStatus;
 }
 
 const CollectorRolesList = () => {
@@ -114,7 +120,7 @@ const CollectorRolesList = () => {
               number: collector.number,
               enhanced_roles: enhancedRoles || [],
               sync_status: syncStatus || undefined
-            };
+            } as CollectorInfo;
           })
         );
 
