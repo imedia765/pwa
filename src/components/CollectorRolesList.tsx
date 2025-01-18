@@ -108,13 +108,13 @@ const CollectorRolesList = () => {
             if (syncError) throw syncError;
 
             // Explicitly type-cast roles to UserRole
-            const typedRoles = roles?.map(r => r.role as UserRole) || [];
-            const typedRoleDetails = roles?.map(r => ({
+            const typedRoles = (roles || []).map(r => r.role as UserRole);
+            const typedRoleDetails = (roles || []).map(r => ({
               role: r.role as UserRole,
               created_at: r.created_at
-            })) || [];
+            }));
 
-            return {
+            const collectorInfo: CollectorInfo = {
               ...memberData,
               roles: typedRoles,
               role_details: typedRoleDetails,
@@ -124,7 +124,9 @@ const CollectorRolesList = () => {
               number: collector.number,
               enhanced_roles: enhancedRoles || [],
               sync_status: syncStatus || undefined
-            } as CollectorInfo;
+            };
+
+            return collectorInfo;
           })
         );
 
